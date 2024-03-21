@@ -151,6 +151,34 @@ void RegistrarClient::HandleRegister(
     std::shared_ptr<NetworkDriver> network_driver,
     std::shared_ptr<CryptoDriver> crypto_driver) {
   // TODO: implement me!
+    //1) Handles key exchange.
+    auto keys = HandleKeyExchange(network_driver, crypto_driver);
+    CryptoPP::SecByteBlock AES_key = keys.first;
+    CryptoPP::SecByteBlock HMAC_key = keys.second;
+
+    //2) Gets user info and verifies that the user hasn't already registered. 
+    // (if already registered, return existing signature).
+    auto en_v2r_data = network_driver->read();
+    auto v2r_data = crypto_driver->decrypt_and_verify(AES_key, HMAC_key, en_v2r_data);
+    if(!v2r_data.second) {
+        std::cerr<<"invalid message!"<<std::endl;
+        return;
+    }
+    VoterToRegistrar_Register_Message v2r_rgs_m;
+    v2r_rgs_m.deserialize(v2r_data.first);
+    //id, vote
+    RegistrarToVoter_Blind_Signature_Message r2v_sig_s;
+    RegistrarToVoter_Blind_Signature_Message voter = db_driver->find_voter(v2r_rgs_m.id);
+    if(voter.id != "") { // todo: find out what's it like
+        r2v_sig_s = voter;
+    }else {
+        r2v_sig_s.id = v2r_rgs_m.id;
+        r2v_sig_s.registrar_signature = crypto_driver->RSA_BLIND_sign(RSA_registrar_signing_key, v2r_rgs_m.vote); //  CryptoPP::Integer 
+        db_driver->insert_voter(r2v_sig_s);
+    }
+    std::vector<unsigned char> r2v_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &r2v_sig_s);
+    network_driver->send(r2v_raw_data);
+    
   // --------------------------------
   // Exit cleanly
   network_driver->disconnect();

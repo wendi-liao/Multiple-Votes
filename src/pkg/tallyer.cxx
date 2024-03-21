@@ -154,7 +154,62 @@ TallyerClient::HandleKeyExchange(std::shared_ptr<NetworkDriver> network_driver,
 void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
                                 std::shared_ptr<CryptoDriver> crypto_driver) {
   // TODO: implement me!
-  // --------------------------------
+    // 1) Handles key exchange.
+    auto keys = HandleKeyExchange(network_driver, crypto_driver);
+    CryptoPP::SecByteBlock AES_key = keys.first;
+    CryptoPP::SecByteBlock HMAC_key = keys.second;
+    // 2) Receives a vote from the user, makes sure the user hasn't voted yet,
+    // verifies the server's signature, and verify the zkp.
+    std::vector<unsigned char> en_v2t_data = network_driver->read();
+    auto v2t_data = crypto_driver->decrypt_and_verify(AES_key, HMAC_key, en_v2t_data);
+    if(!v2t_data.second) {
+        std::cerr<<"invalid message!"<<std::endl;
+        return;
+    }
+    VoterToTallyer_Vote_Message v2t;
+    v2t.deserialize(v2t_data.first);
+    // makes sure the user hasn't voted yet,
+    if(db_driver->vote_exists(v2t.vote)) {
+        std::cerr<< "has voted!"<<std::endl;
+        network_driver->disconnect();
+        return;
+    }
+    
+    //verifies the server's signature, and verify the zkp.
+    if(!crypto_driver->RSA_BLIND_verify(this->RSA_registrar_verification_key, v2t.vote, v2t.unblinded_signature)) {
+        std::cerr<< "blind verification fails!"<<std::endl;
+        network_driver->disconnect();
+        return;
+    }
+    if(ElectionClient::VerifyVoteZKP(std::make_pair(v2t.vote, v2t.zkp), this->EG_arbiter_public_key)) {
+        std::cerr<< "SKP verification fails!"<<std::endl;
+        network_driver->disconnect();
+        return;
+    }
+
+    //3) Signs the vote and publishes it to the database if it is valid.
+    //4) Mark this user as having already voted.
+    std::vector<unsigned char> vote_cipher_data;
+    v2t.vote.serialize(vote_cipher_data);
+    std::vector<unsigned char> zkp_data;
+    v2t.zkp.serialize(zkp_data);
+    
+    std::string sign_tallyer = chvec2str(vote_cipher_data) + chvec2str(zkp_data) + integer_to_string(v2t.unblinded_signature);
+    std::string signature_tallyer = crypto_driver->RSA_sign(RSA_tallyer_signing_key, str2chvec(sign_tallyer)); //string
+    
+    VoteRow t2w_msg;
+    t2w_msg.vote = v2t.vote;
+    t2w_msg.zkp = v2t.zkp;
+    t2w_msg.unblinded_signature = v2t.unblinded_signature;
+    t2w_msg.tallyer_signature = signature_tallyer;
+
+    db_driver->insert_vote(t2w_msg);
+
+    //  Disconnect and throw an error if any MACs, signatures, or zkps are invalid
+    //  or if the user has already voted.
+
+
+// --------------------------------
   // Exit cleanly.
   network_driver->disconnect();
 }
