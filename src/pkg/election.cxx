@@ -79,19 +79,14 @@ bool ElectionClient::VerifyVoteZKP(
     VoteZKP_Struct zkp = vote.second;
 
     if(ModularExponentiation(DL_G, zkp.r0, DL_P) != a_times_b_mod_c(zkp.a0, ModularExponentiation(vote_cipher.a, zkp.c0, DL_P), DL_P)) return false;
-    std::cout<<"VerifyVoteZKP 1 finish"<<std::endl;
     if(ModularExponentiation(DL_G, zkp.r1, DL_P) != a_times_b_mod_c(zkp.a1, ModularExponentiation(vote_cipher.a, zkp.c1, DL_P), DL_P)) return false;
-    std::cout<<"VerifyVoteZKP 2 finish"<<std::endl;
 
     if(ModularExponentiation(pk, zkp.r0, DL_P) != a_times_b_mod_c(zkp.b0, ModularExponentiation(vote_cipher.b, zkp.c0, DL_P), DL_P)) return false;
-    std::cout<<"VerifyVoteZKP 3 finish"<<std::endl;
 
     CryptoPP::Integer b_inv_g = a_times_b_mod_c(vote_cipher.b, EuclideanMultiplicativeInverse(DL_G, DL_P), DL_P);
     if(ModularExponentiation(pk, zkp.r1, DL_P) != a_times_b_mod_c(zkp.b1, ModularExponentiation(b_inv_g, zkp.c1, DL_P), DL_P)) return false;
-    std::cout<<"VerifyVoteZKP 4 finish"<<std::endl;
     
     if((zkp.c0 + zkp.c1) % DL_Q != hash_vote_zkp(pk, vote_cipher.a, vote_cipher.b, zkp.a0, zkp.b0, zkp.a1, zkp.b1) % DL_Q) return false;
-    std::cout<<"VerifyVoteZKP 5 finish"<<std::endl;
 
     return true;
 }
@@ -161,8 +156,8 @@ Vote_Ciphertext ElectionClient::CombineVotes(std::vector<VoteRow> all_votes) {
     combine_vote.a = 1;
     combine_vote.b = 1;
     for(auto &vote_msg: all_votes) {
-        combine_vote.a *= vote_msg.vote.a;
-        combine_vote.b *= vote_msg.vote.b;
+        combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.vote.a, DL_P);
+        combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.vote.b, DL_P);
     }
     return combine_vote;
 }

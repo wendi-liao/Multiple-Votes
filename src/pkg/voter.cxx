@@ -311,8 +311,8 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
         if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote_msg.vote, vote_msg.zkp), this->EG_arbiter_public_key)) 
             continue;
         vote_tot++;
-        combine_vote.a *= vote_msg.vote.a;
-        combine_vote.b *= vote_msg.vote.b;
+        combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.vote.a, DL_P);
+        combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.vote.b, DL_P);
     }
     std::vector<PartialDecryptionRow> partial_dec = db_driver->all_partial_decryptions();
     std::vector<PartialDecryptionRow> valid_partial_decryptions;
