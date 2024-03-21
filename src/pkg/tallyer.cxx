@@ -181,7 +181,7 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
         network_driver->disconnect();
         return;
     }
-    if(ElectionClient::VerifyVoteZKP(std::make_pair(v2t.vote, v2t.zkp), this->EG_arbiter_public_key)) {
+    if(!ElectionClient::VerifyVoteZKP(std::make_pair(v2t.vote, v2t.zkp), this->EG_arbiter_public_key)) {
         std::cerr<< "SKP verification fails!"<<std::endl;
         network_driver->disconnect();
         return;

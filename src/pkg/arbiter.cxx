@@ -105,6 +105,7 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
                         this->EG_arbiter_public_key);
   // TODO: implement me!
     //2) Gets all of the votes from the database.
+    std::cout<<"Gets"<<std::endl;
     std::vector<VoteRow>  allV = this->db_driver->all_votes(); // std::vector<VoteRow> 
     std::vector<VoteRow> valid_vote;
     for(auto &vMsg: allV) {
@@ -112,7 +113,7 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
             throw std::runtime_error("Arbiter:blind verification fails!");
             continue;
         }
-        if(ElectionClient::VerifyVoteZKP(std::make_pair(vMsg.vote, vMsg.zkp), this->EG_arbiter_public_key)) {
+        if(!ElectionClient::VerifyVoteZKP(std::make_pair(vMsg.vote, vMsg.zkp), this->EG_arbiter_public_key)) {
             throw std::runtime_error("Arbiter:ZKP verification fails!");
             continue;
         }
@@ -128,12 +129,18 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
         valid_vote.push_back(vMsg);
     }
     //4) Combines all valid votes into one vote via `Election::CombineVotes`.
+    std::cout<<"Combines"<<std::endl;
+
     Vote_Ciphertext combined_vote = ElectionClient::CombineVotes(valid_vote);
 
     //5) Partially decrypts the combined vote.
+    std::cout<<"decrypts"<<std::endl;
+
     auto partial_decrypt = ElectionClient::PartialDecrypt(combined_vote, this->EG_arbiter_public_key_i, this->EG_arbiter_secret_key);
     
     //6) Publishes the decryption and zkp to the database.
+    std::cout<<"Publishes"<<std::endl;
+
     PartialDecryptionRow partialRow;
     partialRow.arbiter_id = arbiter_config.arbiter_id;
     partialRow.arbiter_vk_path = arbiter_config.arbiter_public_key_path;
