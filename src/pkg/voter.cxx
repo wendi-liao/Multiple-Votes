@@ -310,6 +310,11 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
         //TallyerToWorld_Vote_Message
         if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote_msg.vote, vote_msg.zkp), this->EG_arbiter_public_key)) 
             continue;
+        if(!crypto_driver->RSA_BLIND_verify(RSA_registrar_verification_key, vote_msg.vote, vote_msg.unblinded_signature)) 
+            continue;    
+        if(!crypto_driver->RSA_verify(RSA_tallyer_verification_key, concat_vote_zkp_and_signature(vote_msg.vote, vote_msg.zkp, vote_msg.unblinded_signature), vote_msg.tallyer_signature))
+            continue;    
+        
         vote_tot++;
         combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.vote.a, DL_P);
         combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.vote.b, DL_P);
@@ -328,5 +333,6 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
         std::cout<<"error for finding the final result!"<<std::endl;
         return std::make_tuple(0, 0, false);
     }
+    std::cout<<"DOveri "<<vote_tot - ret<<","<<ret<<std::endl;
     return std::make_tuple(vote_tot - ret, ret, true);
 }
