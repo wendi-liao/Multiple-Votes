@@ -1,5 +1,6 @@
 
 目前规划：数据库内部结构由文曦来搞；剩下的由lwd来搞；
+有**的都是文曦同学需要做的：
 
 Voter - Registrar:
 voter有多个votes，目前做的是把一个个vote拆分出来发给registra，VoterToRegistrar_Register_Message 结构不变。
@@ -23,6 +24,8 @@ Voter-Verify
 *通过db_driver->all_votes()， VoteRow里面包含了每一个voter投的所有票（对应图中的一行），返回的是std::vector<VoteRow>，待修改*
 
 *db_driver->all_partial_decryptions(); 待修改*
+lwd的想法：db_driver->all_partial_decryptions(i), 加一个参数i，代表返回针对candidate i的投票结果。（也许名字也应该改成：db_driver->some_partial_decryptions(i)(bushi)）
+
 这里和arbiter ’this->db_driver->insert_partial_decryption(partialRows);‘相互对应。返回的是就是vector<std::vector<PartialDecryptionRow>>
 我们可以讨论一下有关这个结构，是否需要给std::vector<PartialDecryptionRow>建立一个struct？
 (这里的代码部分lwd还没有改)

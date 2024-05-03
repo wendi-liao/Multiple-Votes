@@ -362,20 +362,24 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
        combine_votes.push_back(combine_vote);
     }    
 
-    std::vector<PartialDecryptionRow> partial_dec = db_driver->all_partial_decryptions();
-    std::vector<PartialDecryptionRow> valid_partial_decryptions;
-    for(auto dec_msg: partial_dec) {
-        CryptoPP::Integer pki;
-        LoadInteger(dec_msg.arbiter_vk_path, pki);
-        if(!ElectionClient::VerifyPartialDecryptZKP(dec_msg, pki)) continue;
-        valid_partial_decryptions.push_back(dec_msg);
+    for(int i = 0; i < this->t; i ++) {
+        std::vector<PartialDecryptionRow> partial_dec = db_driver->all_partial_decryptions(i);
+        std::vector<PartialDecryptionRow> valid_partial_decryptions;
+        for(auto dec_msg: partial_dec) {
+            CryptoPP::Integer pki;
+            LoadInteger(dec_msg.arbiter_vk_path, pki);
+            if(!ElectionClient::VerifyPartialDecryptZKP(dec_msg, pki)) continue;
+            valid_partial_decryptions.push_back(dec_msg);
+        }
+        
+        Vote_Ciphertext combine_vote = combine_votes[i];
+        CryptoPP::Integer ret = ElectionClient::CombineResults(combine_vote, valid_partial_decryptions);
+        if(ret == -1) {
+            std::cout<<"error for finding the final result!"<<std::endl;
+            return std::make_tuple(0, 0, false);
+        }
+        std::cout<<"As for candidate "<<i<<", it receives vote "<<ret<<std::endl;
     }
-
-    CryptoPP::Integer ret = ElectionClient::CombineResults(combine_vote, valid_partial_decryptions);
-    if(ret == -1) {
-        std::cout<<"error for finding the final result!"<<std::endl;
-        return std::make_tuple(0, 0, false);
-    }
-    std::cout<<"DOveri "<<vote_tot - ret<<","<<ret<<std::endl;
     return std::make_tuple(vote_tot - ret, ret, true);
+  
 }
