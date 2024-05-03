@@ -47,11 +47,22 @@ void DBDriver::init_tables() {
   }
 
   // create vote table
+  // std::string create_vote_query = "CREATE TABLE IF NOT EXISTS vote("
+  //                                 "vote TEXT PRIMARY KEY  NOT NULL, "
+  //                                 "zkp TEXT NOT NULL, "
+  //                                 "unblinded_signature TEXT NOT NULL,"
+  //                                 "tallyer_signature TEXT NOT NULL);";
+
   std::string create_vote_query = "CREATE TABLE IF NOT EXISTS vote("
-                                  "vote TEXT PRIMARY KEY  NOT NULL, "
+                                  "vote1 TEXT PRIMARY KEY  NOT NULL,"
+                                  "vote2 TEXT PRIMARY KEY  NOT NULL,"
+                                  "vote3 TEXT PRIMARY KEY  NOT NULL,"
+                                  "vote4 TEXT PRIMARY KEY  NOT NULL,"
+                                  "vote5 TEXT PRIMARY KEY  NOT NULL,"
                                   "zkp TEXT NOT NULL, "
                                   "unblinded_signature TEXT NOT NULL,"
-                                  "tallyer_signature TEXT NOT NULL);";
+                                  "tallyer_signature TEXT NOT NULL);";    
+
   exit = sqlite3_exec(this->db, create_vote_query.c_str(), NULL, 0, &err);
   if (exit != SQLITE_OK) {
     std::cerr << "Error creating table: " << err << std::endl;
@@ -203,7 +214,7 @@ std::vector<VoteRow> DBDriver::all_votes() {
   std::unique_lock<std::mutex> lck(this->mtx);
 
   std::string find_query =
-      "SELECT vote, zkp, unblinded_signature, tallyer_signature FROM vote";
+      "SELECT vote1, vote2, vote3, vote4, vote5, zkp, unblinded_signature, tallyer_signature FROM vote";
 
   // Prepare statement.
   sqlite3_stmt *stmt;
