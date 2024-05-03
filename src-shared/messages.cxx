@@ -120,6 +120,29 @@ int HMACTagged_Wrapper::deserialize(std::vector<unsigned char> &data) {
   n += get_string(&this->mac, data, n);
   return n;
 }
+/*
+newly added, vector<Integer>
+*/
+void Multi_Integer::serialize(std::vector<unsigned char> &data) {
+    // Add message type.
+    data.push_back((char)MessageType::Multi_Integer);
+    for(int i = 0; i < ints.size(); i++) {
+        put_integer(this->ints[i], data);
+    }
+}
+
+void Multi_Integer::deserialize(std::vector<unsigned char> &data) {
+    assert(data[0] == MessageType::VoterToTallyer_Vote_Message);
+    // Get fields.
+    int n = 1;
+    int idx = 0;
+    std::vector<unsigned char>::iterator iter = data.begin();
+    while(iter + n < data.end()) {
+        std::vector<unsigned char> int_slice =
+            std::vector<unsigned char>(data.begin() + n, data.end());
+        n += get_integer(&this->ints[idx++], data, n);
+    }
+}
 
 // ================================================
 // KEY EXCHANGE
@@ -284,6 +307,41 @@ int Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
 }
 
 /**
+ * serialize Multi_Vote_Ciphertext.
+ */
+void Multi_Vote_Ciphertext::serialize(std::vector<unsigned char> &data) {
+  // Add message type.
+  data.push_back((char)MessageType::Multi_Vote_Ciphertext);
+
+  // Add fields.
+  for(int i = 0; i < this->ct.size(); i++) {
+    std::vector<unsigned char> vote_data;
+    this->ct[i].serialize(vote_data);
+    data.insert(data.end(), vote_data.begin(), vote_data.end());
+  }
+}
+
+/**
+ * deserialize Multi_Vote_Ciphertext.
+ */
+void Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
+  // Check correct message type.
+  assert(data[0] == MessageType::Multi_Vote_Ciphertext);
+
+  // Get fields.
+  int n = 1;
+  int idx = 0;
+  std::vector<unsigned char>::iterator iter = data.begin();
+  while(iter + n < data.end()) {
+    std::vector<unsigned char> vote_slice =
+        std::vector<unsigned char>(data.begin() + n, data.end());
+    n += this->ct[idx++].deserialize(vote_slice);
+  }
+
+  return n;
+}
+
+/**
  * serialize VoteZKP_Struct.
  */
 void VoteZKP_Struct::serialize(std::vector<unsigned char> &data) {
@@ -322,6 +380,41 @@ int VoteZKP_Struct::deserialize(std::vector<unsigned char> &data) {
 }
 
 /**
+ * serialize Multi_VoteZKP_Struct.
+ */
+void Multi_VoteZKP_Struct::serialize(std::vector<unsigned char> &data) {
+  // Add message type.
+  data.push_back((char)MessageType::Multi_VoteZKP_Struct);
+
+  // Add fields.
+  for(int i = 0; i < this->zkp.size(); i++) {
+    std::vector<unsigned char> zkp_data;
+    this->zkp[i].serialize(zkp_data);
+    data.insert(data.end(), zkp_data.begin(), zkp_data.end());
+  }
+}
+
+/**
+ * deserialize Multi_VoteZKP_Struct.
+ */
+int Multi_VoteZKP_Struct::deserialize(std::vector<unsigned char> &data) {
+  // Check correct message type.
+  assert(data[0] == MessageType::Multi_VoteZKP_Struct);
+
+  // Get fields.
+  int n = 1;
+  int idx = 0;
+  std::vector<unsigned char>::iterator iter = data.begin();
+  while(iter + n < data.end()) {
+    std::vector<unsigned char> zkp_slice =
+        std::vector<unsigned char>(data.begin() + n, data.end());
+    n += this->zkp[idx++].deserialize(zkp_slice);
+  }
+
+  return n;
+}
+
+/**
  * serialize VoterToTallyer_Vote_Message.
  */
 void VoterToTallyer_Vote_Message::serialize(std::vector<unsigned char> &data) {
@@ -331,13 +424,15 @@ void VoterToTallyer_Vote_Message::serialize(std::vector<unsigned char> &data) {
   // Add fields.
 
   std::vector<unsigned char> vote_data;
-  this->vote.serialize(vote_data);
+  this->votes.serialize(vote_data);
   data.insert(data.end(), vote_data.begin(), vote_data.end());
 
-  put_integer(this->unblinded_signature, data);
+    std::vector<unsigned char> sign_data;
+    this->unblinded_signatures.serialize(sign_data);
+    data.insert(data.end(), sign_data.begin(), sign_data.end());
 
   std::vector<unsigned char> zkp_data;
-  this->zkp.serialize(zkp_data);
+  this->zkps.serialize(zkp_data);
   data.insert(data.end(), zkp_data.begin(), zkp_data.end());
 }
 
@@ -352,13 +447,15 @@ int VoterToTallyer_Vote_Message::deserialize(std::vector<unsigned char> &data) {
   int n = 1;
   std::vector<unsigned char> vote_slice =
       std::vector<unsigned char>(data.begin() + n, data.end());
-  n += this->vote.deserialize(vote_slice);
+  n += this->votes.deserialize(vote_slice);
 
-  n += get_integer(&this->unblinded_signature, data, n);
+  std::vector<unsigned char> sign_slice =
+      std::vector<unsigned char>(data.begin() + n, data.end());
+  n += this->unblinded_signatures.deserialize(sign_slice);
 
   std::vector<unsigned char> zkp_slice =
       std::vector<unsigned char>(data.begin() + n, data.end());
-  n += this->zkp.deserialize(zkp_slice);
+  n += this->zkps.deserialize(zkp_slice);
 
   return n;
 }
