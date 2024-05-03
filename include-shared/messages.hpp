@@ -205,7 +205,8 @@ struct TallyerToWorld_Vote_Message : public Serializable {
   Multi_Vote_Ciphertext votes;
   Multi_VoteZKP_Struct zkps;
   Multi_Integer unblinded_signatures;
-  Multi_String tallyer_signatures;  // each tallyer_signature computed on vote || zkp || unblinded_signature
+//   Multi_String tallyer_signatures;  // each tallyer_signature computed on vote || zkp || unblinded_signature
+  std::string tallyer_signatures;  // tallyer_signature computed on votes || zkps || unblinded_signatures
 
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);

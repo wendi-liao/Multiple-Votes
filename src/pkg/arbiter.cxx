@@ -106,22 +106,37 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
   // TODO: implement me!
     //2) Gets all of the votes from the database.
     std::cout<<"Gets"<<std::endl;
-    std::vector<VoteRow>  allV = this->db_driver->all_votes(); // std::vector<VoteRow> 
+    std::vector<VoteRow> allV = this->db_driver->all_votes(); // std::vector<VoteRow> 
     std::vector<VoteRow> valid_vote;
     for(auto &vMsg: allV) {
-        if(!crypto_driver->RSA_BLIND_verify(this->RSA_registrar_verification_key, vMsg.vote, vMsg.unblinded_signature)) {
-            throw std::runtime_error("Arbiter:blind verification fails!");
-            continue;
+        this->t = vMsg.votes.ct.size();
+        for(int i = 0; i < this->t; i++) {
+            Vote_Ciphertext vote =  vMsg.votes.ct[i];
+            CryptoPP::Integer unblinded_signature =  vMsg.unblinded_signatures.ints[i];
+            VoteZKP_Struct zkp =  vMsg.zkps.ints[i];
+            bool invalid_voter = false;
+            if(!crypto_driver->RSA_BLIND_verify(this->RSA_registrar_verification_key, vote, unblinded_signature)) {
+                throw std::runtime_error("Arbiter:blind verification fails!");
+                invalid_voter = true;
+                break;
+            }
+            if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote, zkp), this->EG_arbiter_public_key)) {
+                throw std::runtime_error("Arbiter:ZKP verification fails!");
+                invalid_voter = true;
+                break;
+            }
         }
-        if(!ElectionClient::VerifyVoteZKP(std::make_pair(vMsg.vote, vMsg.zkp), this->EG_arbiter_public_key)) {
-            throw std::runtime_error("Arbiter:ZKP verification fails!");
-            continue;
-        }
+        if(invalid_voter) continue;
+
+        //need to be consistent to tallyer - HandleTally
         std::vector<unsigned char> vote_cipher_data;
-        vMsg.vote.serialize(vote_cipher_data);
+        vMsg.votes.serialize(vote_cipher_data);
         std::vector<unsigned char> zkp_data;
-        vMsg.zkp.serialize(zkp_data);
-        std::string sign_tallyer = chvec2str(vote_cipher_data) + chvec2str(zkp_data) + integer_to_string(vMsg.unblinded_signature); 
+        vMsg.zkps.serialize(zkp_data);
+        std::vector<unsigned char> signature_data;
+        vMsg.unblinded_signatures.serialize(signature_data);
+        
+        std::string sign_tallyer = chvec2str(vote_cipher_data) + chvec2str(zkp_data) + chvec2str(signature_data); 
         if(!crypto_driver->RSA_verify(this->RSA_tallyer_verification_key, str2chvec(sign_tallyer), vMsg.tallyer_signature)) {
             throw std::runtime_error("Arbiter:tallyer_signature verification fails!");
             continue;

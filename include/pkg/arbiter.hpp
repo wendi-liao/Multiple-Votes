@@ -34,4 +34,6 @@ private:
   CryptoPP::Integer EG_arbiter_public_key_i; // Our EG public key
   CryptoPP::RSA::PublicKey RSA_registrar_verification_key;
   CryptoPP::RSA::PublicKey RSA_tallyer_verification_key;
+
+   int t;// t candidate for voting 
 };

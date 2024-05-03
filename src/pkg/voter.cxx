@@ -255,7 +255,7 @@ void VoterClient::HandleRegister(std::string input) {
  * to the tallyer.
  */
 void VoterClient::HandleVote(std::string input) {
-/*  // Parse input and connect to tallyer
+  // Parse input and connect to tallyer
   std::vector<std::string> args = string_split(input, ' ');
   if (args.size() != 3) {
     this->cli_driver->print_warning("usage: vote <address> <port>");
@@ -282,9 +282,9 @@ void VoterClient::HandleVote(std::string input) {
 
     //3) Sends the vote, ZKP, and unblinded signature to the tallyer.
     VoterToTallyer_Vote_Message v2t;
-    v2t.vote = this->votes.ct[i];
-    v2t.unblinded_signature = registrar_signature_unbinded;
-    v2t.zkp = this->vote_zkp;
+    v2t.votes = this->votes;
+    v2t.unblinded_signature = registrar_signatures_unbinded;
+    v2t.zkp = this->vote_zkps;
 
     std::vector<unsigned char> v2t_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &v2t);
     network_driver->send(v2t_raw_data);
@@ -295,7 +295,7 @@ void VoterClient::HandleVote(std::string input) {
   // --------------------------------
   // Exit cleanly.
   this->network_driver->disconnect();
-  */
+  
 }
 
 /**

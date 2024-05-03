@@ -140,6 +140,22 @@ void Multi_String::serialize(std::vector<unsigned char> &data) {
   }
 }
 
+int Multi_String::deserialize(std::vector<unsigned char> &data) {
+    assert(data[0] == MessageType::Multi_String);
+    // Get fields.
+    int n = 1;
+    int idx = 0;
+    std::vector<unsigned char>::iterator iter = data.begin();
+    while(iter + n < data.end()) {
+        std::vector<unsigned char> string_slice =
+            std::vector<unsigned char>(data.begin() + n, data.end());
+        std::string str;
+        n += get_string(&str, data, n);
+        this->strings.push_back(str);
+    }
+    return n;
+}
+
 int Multi_Integer::deserialize(std::vector<unsigned char> &data) {
     assert(data[0] == MessageType::Multi_Integer);
     // Get fields.
@@ -484,14 +500,16 @@ void TallyerToWorld_Vote_Message::serialize(std::vector<unsigned char> &data) {
 
   // Add fields.
   std::vector<unsigned char> vote_data;
-  this->vote.serialize(vote_data);
+  this->votes.serialize(vote_data);
   data.insert(data.end(), vote_data.begin(), vote_data.end());
 
   std::vector<unsigned char> zkp_data;
-  this->zkp.serialize(zkp_data);
+  this->zkps.serialize(zkp_data);
   data.insert(data.end(), zkp_data.begin(), zkp_data.end());
 
-  put_integer(this->unblinded_signature, data);
+  std::vector<unsigned char> int_data;
+  this->unblinded_signatures.serialize(int_data);
+  data.insert(data.end(), int_data.begin(), int_data.end());
 
   put_string(this->tallyer_signature, data);
 }
@@ -507,13 +525,15 @@ int TallyerToWorld_Vote_Message::deserialize(std::vector<unsigned char> &data) {
   int n = 1;
   std::vector<unsigned char> vote_slice =
       std::vector<unsigned char>(data.begin() + n, data.end());
-  n += this->vote.deserialize(vote_slice);
+  n += this->votes.deserialize(vote_slice);
 
   std::vector<unsigned char> zkp_slice =
       std::vector<unsigned char>(data.begin() + n, data.end());
-  n += this->zkp.deserialize(zkp_slice);
+  n += this->zkps.deserialize(zkp_slice);
 
-  n += get_integer(&this->unblinded_signature, data, n);
+  std::vector<unsigned char> signature_slice =
+      std::vector<unsigned char>(data.begin() + n, data.end());
+  n += this->unblinded_signatures.deserialize(signature_slice);
 
   n += get_string(&this->tallyer_signature, data, n);
   return n;

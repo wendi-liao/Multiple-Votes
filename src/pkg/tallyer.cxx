@@ -169,34 +169,48 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
     VoterToTallyer_Vote_Message v2t;
     v2t.deserialize(v2t_data.first);
     // makes sure the user hasn't voted yet,
-    if(db_driver->vote_exists(v2t.vote)) {
+    if(db_driver->vote_exists(v2t.votes)) {
         std::cerr<< "has voted!"<<std::endl;
         network_driver->disconnect();
         return;
     }
     
     //verifies the server's signature, and verify the zkp.
-    if(!crypto_driver->RSA_BLIND_verify(this->RSA_registrar_verification_key, v2t.vote, v2t.unblinded_signature)) {
-        std::cerr<< "blind verification fails!"<<std::endl;
-        network_driver->disconnect();
-        return;
+    this->t = v2t.votes.ct.size();
+    assert(this->t == v2t.unblinded_signatures.ints.size() && this->t == v2t.zkps.zkp.size() && "vector should have same size!");
+    for(int i = 0; i < this->t; i++) {
+        Vote_Ciphertext vote = v2t.votes.ct[i];
+        Multi_VoteZKP_Struct zkp = v2t.zkps.zkp[i];
+        CryptoPP::Integer unblinded_signature = v2t.unblinded_signatures.ints[i];
+        if(!crypto_driver->RSA_BLIND_verify(this->RSA_registrar_verification_key, vote, unblinded_signature)) {
+            std::cerr<< "blind verification fails!"<<std::endl;
+            network_driver->disconnect();
+            return;
+        }
+
+        if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote, zkp), this->EG_arbiter_public_key)) {
+            std::cerr<< "SKP verification fails!"<<std::endl;
+            network_driver->disconnect();
+            return;
+        }
     }
-    if(!ElectionClient::VerifyVoteZKP(std::make_pair(v2t.vote, v2t.zkp), this->EG_arbiter_public_key)) {
-        std::cerr<< "SKP verification fails!"<<std::endl;
-        network_driver->disconnect();
-        return;
-    }
+   
+
 
     //3) Signs the vote and publishes it to the database if it is valid.
     //4) Mark this user as having already voted.
+    //need to be consistent to arbiter - HandleAdjudicate
     std::vector<unsigned char> vote_cipher_data;
-    v2t.vote.serialize(vote_cipher_data);
+    v2t.votes.serialize(vote_cipher_data);
     std::vector<unsigned char> zkp_data;
-    v2t.zkp.serialize(zkp_data);
-    
-    std::string sign_tallyer = chvec2str(vote_cipher_data) + chvec2str(zkp_data) + integer_to_string(v2t.unblinded_signature);
+    v2t.zkps.serialize(zkp_data);
+    std::vector<unsigned char> signature_data;
+    v2t.unblinded_signatures.serialize(signature_data);
+
+    std::string sign_tallyer = chvec2str(vote_cipher_data) + chvec2str(zkp_data) +  chvec2str(signature_data);
     std::string signature_tallyer = crypto_driver->RSA_sign(RSA_tallyer_signing_key, str2chvec(sign_tallyer)); //string
     
+    //todo:!!!
     VoteRow t2w_msg;
     t2w_msg.vote = v2t.vote;
     t2w_msg.zkp = v2t.zkp;
