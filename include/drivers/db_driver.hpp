@@ -25,7 +25,7 @@ public:
   std::vector<VoteRow> all_votes();
   VoteRow find_vote(Vote_Ciphertext vote);
   VoteRow insert_vote(VoteRow vote);
-  bool vote_exists(Vote_Ciphertext vote);
+  bool vote_exists(Multi_Vote_Ciphertext votes);
 
   std::vector<PartialDecryptionRow> all_partial_decryptions();
   PartialDecryptionRow find_partial_decryption(std::string arbiter_id);
