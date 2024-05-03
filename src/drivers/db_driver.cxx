@@ -47,11 +47,26 @@ void DBDriver::init_tables() {
   }
 
   // create vote table
+  // std::string create_vote_query = "CREATE TABLE IF NOT EXISTS vote("
+  //                                 "vote TEXT PRIMARY KEY  NOT NULL, "
+  //                                 "zkp TEXT NOT NULL, "
+  //                                 "unblinded_signature TEXT NOT NULL,"
+  //                                 "tallyer_signature TEXT NOT NULL);";
+
   std::string create_vote_query = "CREATE TABLE IF NOT EXISTS vote("
-                                  "vote TEXT PRIMARY KEY  NOT NULL, "
-                                  "zkp TEXT NOT NULL, "
+                                  "vote1 TEXT PRIMARY KEY  NOT NULL,"
+                                  "vote2 TEXT PRIMARY KEY  NOT NULL,"
+                                  "vote3 TEXT PRIMARY KEY  NOT NULL,"
+                                  "vote4 TEXT PRIMARY KEY  NOT NULL,"
+                                  "vote5 TEXT PRIMARY KEY  NOT NULL,"
+                                  "zkp1 TEXT NOT NULL,"
+                                  "zkp2 TEXT NOT NULL,"
+                                  "zkp3 TEXT NOT NULL,"
+                                  "zkp4 TEXT NOT NULL,"
+                                  "zkp5 TEXT NOT NULL,"
                                   "unblinded_signature TEXT NOT NULL,"
-                                  "tallyer_signature TEXT NOT NULL);";
+                                  "tallyer_signature TEXT NOT NULL);";    
+
   exit = sqlite3_exec(this->db, create_vote_query.c_str(), NULL, 0, &err);
   if (exit != SQLITE_OK) {
     std::cerr << "Error creating table: " << err << std::endl;
@@ -203,7 +218,7 @@ std::vector<VoteRow> DBDriver::all_votes() {
   std::unique_lock<std::mutex> lck(this->mtx);
 
   std::string find_query =
-      "SELECT vote, zkp, unblinded_signature, tallyer_signature FROM vote";
+      "SELECT vote1, vote2, vote3, vote4, vote5, zkp1, zkp2, zkp3, zkp4, zkp5, unblinded_signature, tallyer_signature FROM vote";
 
   // Prepare statement.
   sqlite3_stmt *stmt;
@@ -354,22 +369,58 @@ VoteRow DBDriver::insert_vote(VoteRow vote) {
 /**
  * Returns if vote is in database
  */
-bool DBDriver::vote_exists(Vote_Ciphertext vote) {
+// TallyerToWorld_Vote_Message = VoteRow
+bool DBDriver::vote_exists(Multi_Vote_Ciphertext votes) {
   // Lock db driver.
   std::unique_lock<std::mutex> lck(this->mtx);
 
-  std::string find_query = "SELECT 1 FROM vote WHERE vote = ?";
+  std::string find_query = "SELECT 1 FROM vote"
+                           "WHERE vote1 = ? AND vote2 = ? AND vote3 = ? AND vote4 = ? AND vote5 = ?";
 
-  // Serialize vote.
-  std::vector<unsigned char> vote_data;
-  vote.serialize(vote_data);
-  std::string vote_str = chvec2str(vote_data);
+  // // Serialize vote.
+  // std::vector<unsigned char> vote_data;
+  // votes.serialize(vote_data);
+  // std::string vote_str = chvec2str(vote_data);
+  
+  // Serialize vote1.
+  std::vector<unsigned char> vote1_data;
+  votes.ct[0].serialize(vote1_data);
+  std::string vote1_str = chvec2str(vote1_data);
+
+  // Serialize vote2.
+  std::vector<unsigned char> vote2_data;
+  votes.ct[1].serialize(vote2_data);
+  std::string vote2_str = chvec2str(vote2_data);
+
+  // Serialize vote1.
+  std::vector<unsigned char> vote3_data;
+  votes.ct[2].serialize(vote3_data);
+  std::string vote3_str = chvec2str(vote3_data);
+
+  // Serialize vote1.
+  std::vector<unsigned char> vote4_data;
+  votes.ct[3].serialize(vote4_data);
+  std::string vote4_str = chvec2str(vote4_data);
+
+  // Serialize vote1.
+  std::vector<unsigned char> vote5_data;
+  votes.ct[4].serialize(vote5_data);
+  std::string vote5_str = chvec2str(vote5_data);
+
 
   // Prepare statement.
   sqlite3_stmt *stmt;
   sqlite3_prepare_v2(this->db, find_query.c_str(), find_query.length(), &stmt,
                      nullptr);
-  sqlite3_bind_blob(stmt, 1, vote_str.c_str(), vote_str.length(),
+  sqlite3_bind_blob(stmt, 1, vote1_str.c_str(), vote1_str.length(),
+                    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 2, vote2_str.c_str(), vote2_str.length(),
+                    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 3, vote3_str.c_str(), vote3_str.length(),
+                    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 4, vote4_str.c_str(), vote4_str.length(),
+                    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 5, vote5_str.c_str(), vote5_str.length(),
                     SQLITE_STATIC);
 
   // Check if exists.
