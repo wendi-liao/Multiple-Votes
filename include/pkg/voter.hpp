@@ -43,12 +43,20 @@ private:
   CryptoPP::SecByteBlock AES_key;
   CryptoPP::SecByteBlock HMAC_key;
 
-  Vote_Ciphertext vote;
-  VoteZKP_Struct vote_zkp;
-  CryptoPP::Integer registrar_signature;
-  CryptoPP::Integer blind;
+//   Vote_Ciphertext vote;
+  Multi_Vote_Ciphertext votes;
+//   VoteZKP_Struct vote_zkp;
+  Multi_VoteZKP_Struct vote_zkps;
+//   CryptoPP::Integer registrar_signature;
+  Multi_Integer registrar_signatures;
+//   CryptoPP::Integer blind;
+  Multi_Integer blinds;
 
   CryptoPP::RSA::PrivateKey RSA_voter_signing_key;
   CryptoPP::RSA::PublicKey RSA_registrar_verification_key;
   CryptoPP::RSA::PublicKey RSA_tallyer_verification_key;
+
+  //add for final projects
+  int t; // t candidates 
+  int k; // most votes k candidates(k < t) and now set k =t  
 };

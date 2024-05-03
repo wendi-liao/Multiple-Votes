@@ -33,3 +33,8 @@ void LoadInteger(const std::string &filename, CryptoPP::Integer &i);
 
 void LoadElectionPublicKey(const std::vector<std::string> &filenames,
                            CryptoPP::Integer &public_key);
+
+void SaveVotes(const std::string &filename, Multi_Vote_Ciphertext &votes);     
+void SaveVoteZKPs(const std::string &filename, Multi_VoteZKP_Struct &vote_zkp);
+void SaveIntegers(const std::string &filename, Multi_Integer &i);
+
