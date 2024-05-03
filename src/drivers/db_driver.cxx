@@ -64,8 +64,16 @@ void DBDriver::init_tables() {
                                   "zkp3 TEXT NOT NULL,"
                                   "zkp4 TEXT NOT NULL,"
                                   "zkp5 TEXT NOT NULL,"
-                                  "unblinded_signature TEXT NOT NULL,"
-                                  "tallyer_signature TEXT NOT NULL);";    
+                                  "unblinded_signature1 TEXT NOT NULL,"
+                                  "unblinded_signature2 TEXT NOT NULL,"
+                                  "unblinded_signature3 TEXT NOT NULL,"
+                                  "unblinded_signature4 TEXT NOT NULL,"
+                                  "unblinded_signature5 TEXT NOT NULL,"
+                                  "tallyer_signature1 TEXT NOT NULL,"
+                                  "tallyer_signature2 TEXT NOT NULL,"
+                                  "tallyer_signature3 TEXT NOT NULL,"
+                                  "tallyer_signature4 TEXT NOT NULL,"   
+                                  "tallyer_signature5 TEXT NOT NULL);";
 
   exit = sqlite3_exec(this->db, create_vote_query.c_str(), NULL, 0, &err);
   if (exit != SQLITE_OK) {
@@ -218,7 +226,11 @@ std::vector<VoteRow> DBDriver::all_votes() {
   std::unique_lock<std::mutex> lck(this->mtx);
 
   std::string find_query =
-      "SELECT vote1, vote2, vote3, vote4, vote5, zkp1, zkp2, zkp3, zkp4, zkp5, unblinded_signature, tallyer_signature FROM vote";
+      "SELECT vote1, vote2, vote3, vote4, vote5, "
+      "zkp1, zkp2, zkp3, zkp4, zkp5, "
+      "unblinded_signature1, unblinded_signature2, unblinded_signature3,unblinded_signature4,unblinded_signature5,"
+      "tallyer_signature1, tallyer_signature2, tallyer_signature3, tallyer_signature4, tallyer_signature5"
+      "FROM vote";
 
   // Prepare statement.
   sqlite3_stmt *stmt;
