@@ -132,7 +132,7 @@ void Multi_Integer::serialize(std::vector<unsigned char> &data) {
 }
 
 int Multi_Integer::deserialize(std::vector<unsigned char> &data) {
-    assert(data[0] == MessageType::VoterToTallyer_Vote_Message);
+    assert(data[0] == MessageType::Multi_Integer);
     // Get fields.
     int n = 1;
     int idx = 0;
@@ -140,7 +140,9 @@ int Multi_Integer::deserialize(std::vector<unsigned char> &data) {
     while(iter + n < data.end()) {
         std::vector<unsigned char> int_slice =
             std::vector<unsigned char>(data.begin() + n, data.end());
-        n += get_integer(&this->ints[idx++], data, n);
+        CryptoPP::Integer number;
+        n += get_integer(&number, data, n);
+        this->ints.push_back(number);
     }
     return n;
 }
@@ -327,6 +329,7 @@ void Multi_Vote_Ciphertext::serialize(std::vector<unsigned char> &data) {
  */
 int Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
   // Check correct message type.
+  std::cout<<"datasize"<<data.size()<<std::endl;
   assert(data[0] == MessageType::Multi_Vote_Ciphertext);
 
   // Get fields.
@@ -336,9 +339,10 @@ int Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
   while(iter + n < data.end()) {
     std::vector<unsigned char> vote_slice =
         std::vector<unsigned char>(data.begin() + n, data.end());
-    n += this->ct[idx++].deserialize(vote_slice);
+    Vote_Ciphertext vote;
+    n += vote.deserialize(vote_slice);
+    this->ct.push_back(vote);
   }
-
   return n;
 }
 
@@ -404,12 +408,13 @@ int Multi_VoteZKP_Struct::deserialize(std::vector<unsigned char> &data) {
 
   // Get fields.
   int n = 1;
-  int idx = 0;
   std::vector<unsigned char>::iterator iter = data.begin();
   while(iter + n < data.end()) {
     std::vector<unsigned char> zkp_slice =
         std::vector<unsigned char>(data.begin() + n, data.end());
-    n += this->zkp[idx++].deserialize(zkp_slice);
+    VoteZKP_Struct single_zkp;
+    n += single_zkp.deserialize(zkp_slice);
+    this->zkp.push_back(single_zkp);
   }
 
   return n;
