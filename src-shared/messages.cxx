@@ -131,6 +131,15 @@ void Multi_Integer::serialize(std::vector<unsigned char> &data) {
     }
 }
 
+void Multi_String::serialize(std::vector<unsigned char> &data) {
+  // Add message type
+  data.push_back((char)MessageType::Multi_String);
+
+  for (int i = 0; i < strings.size(); i++){
+    put_string(this->strings[i], data);
+  }
+}
+
 int Multi_Integer::deserialize(std::vector<unsigned char> &data) {
     assert(data[0] == MessageType::Multi_Integer);
     // Get fields.

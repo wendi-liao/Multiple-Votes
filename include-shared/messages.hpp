@@ -35,6 +35,7 @@ enum T {
   Multi_Vote_Ciphertext = 13,
   Multi_VoteZKP_Struct = 14,
   Multi_Integer = 15,
+  Multi_String = 16,
 };
 };
 MessageType::T get_message_type(std::vector<unsigned char> &data);
@@ -97,6 +98,14 @@ struct Multi_Integer : public Serializable {
     void serialize(std::vector<unsigned char> &data);
     int deserialize(std::vector<unsigned char> &data);
 };
+
+// struct for multiple string
+struct Multi_String : public Serializable{
+  std::vector<std::string> strings;
+
+  void serialize(std::vector<unsigned char> &data);
+  int deserialize(std::vector<unsigned char> &data);
+}
 // ================================================
 // KEY EXCHANGE
 // ================================================
@@ -181,12 +190,22 @@ struct VoterToTallyer_Vote_Message : public Serializable {
   int deserialize(std::vector<unsigned char> &data);
 };
 
+// struct TallyerToWorld_Vote_Message : public Serializable {
+//   Vote_Ciphertext vote;
+//   VoteZKP_Struct zkp;
+//   CryptoPP::Integer unblinded_signature;
+//   std::string
+//       tallyer_signature; // computed on vote || zkp || unblinded_signature
+
+//   void serialize(std::vector<unsigned char> &data);
+//   int deserialize(std::vector<unsigned char> &data);
+// };
+
 struct TallyerToWorld_Vote_Message : public Serializable {
-  Vote_Ciphertext vote;
-  VoteZKP_Struct zkp;
-  CryptoPP::Integer unblinded_signature;
-  std::string
-      tallyer_signature; // computed on vote || zkp || unblinded_signature
+  Multi_Vote_Ciphertext votes;
+  Multi_VoteZKP_Struct zkps;
+  Multi_Integer unblinded_signatures;
+  Multi_String tallyer_signatures;  // each tallyer_signature computed on vote || zkp || unblinded_signature
 
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);
