@@ -689,3 +689,25 @@ concat_vote_zkp_and_signature(Vote_Ciphertext &vote, VoteZKP_Struct &zkp,
   v.insert(v.end(), signature_data.begin(), signature_data.end());
   return v;
 }
+
+/*
+Concatenate votes and zkps into vector of unsigned char
+*/
+std::vector<unsigned char>
+concat_votes_zkps_and_signatures(Multi_Vote_Ciphertext &vote, Multi_VoteZKP_Struct &zkp,
+                              Multi_Integer &signature) {
+  // Serialize vote and zkp.
+  std::vector<unsigned char> vote_data;
+  vote.serialize(vote_data);
+  std::vector<unsigned char> zkp_data;
+  zkp.serialize(zkp_data);
+  std::vector<unsigned char> signature_data;
+  signature.serialize(signature_data);
+
+  // Concat data to vec.
+  std::vector<unsigned char> v;
+  v.insert(v.end(), vote_data.begin(), vote_data.end());
+  v.insert(v.end(), zkp_data.begin(), zkp_data.end());
+  v.insert(v.end(), signature_data.begin(), signature_data.end());
+  return v;
+}

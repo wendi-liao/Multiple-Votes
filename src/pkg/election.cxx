@@ -149,17 +149,23 @@ bool ElectionClient::VerifyPartialDecryptZKP(
 /**
  * Combine votes into one using homomorphic encryption.
  */
-Vote_Ciphertext ElectionClient::CombineVotes(std::vector<VoteRow> all_votes) {
+std::vector<Vote_Ciphertext> ElectionClient::CombineVotes(std::vector<VoteRow> all_votes) {
   initLogger();
   // TODO: implement me!
-    Vote_Ciphertext combine_vote;
-    combine_vote.a = 1;
-    combine_vote.b = 1;
-    for(auto &vote_msg: all_votes) {
-        combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.vote.a, DL_P);
-        combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.vote.b, DL_P);
+    int t = all_votes[0].votes.size(); // t candidates
+    std::vector<Vote_Ciphertext> combined_votes;
+    for(int i = 0; i < t; i++) {
+        Vote_Ciphertext combine_vote;
+        combine_vote.a = 1;
+        combine_vote.b = 1;
+        for(auto &vote_msg: all_votes) {
+            combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.votes[i].a, DL_P);
+            combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.votes[i].b, DL_P);
+        }
+        combined_votes.push_back(combine_vote);
     }
-    return combine_vote;
+    
+    return combined_votes;
 }
 
 /**

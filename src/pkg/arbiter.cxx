@@ -146,21 +146,30 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
     //4) Combines all valid votes into one vote via `Election::CombineVotes`.
     std::cout<<"Combines"<<std::endl;
 
-    Vote_Ciphertext combined_vote = ElectionClient::CombineVotes(valid_vote);
+    std::vector<Vote_Ciphertext> combined_votes = ElectionClient::CombineVotes(valid_vote);
 
     //5) Partially decrypts the combined vote.
     std::cout<<"decrypts"<<std::endl;
-
-    auto partial_decrypt = ElectionClient::PartialDecrypt(combined_vote, this->EG_arbiter_public_key_i, this->EG_arbiter_secret_key);
-    
+    std::vector<std::pair<PartialDecryption_Struct, DecryptionZKP_Struct>>  partial_decryptions;
+    for(auto &combined_vote : combined_votes) {
+        auto partial_decrypt = ElectionClient::PartialDecrypt(combined_vote, this->EG_arbiter_public_key_i, this->EG_arbiter_secret_key);
+        partial_decryptions.push_back(partial_decrypt);
+    }
     //6) Publishes the decryption and zkp to the database.
     std::cout<<"Publishes"<<std::endl;
 
-    PartialDecryptionRow partialRow;
-    partialRow.arbiter_id = arbiter_config.arbiter_id;
-    partialRow.arbiter_vk_path = arbiter_config.arbiter_public_key_path;
-    partialRow.dec = partial_decrypt.first;
-    partialRow.zkp = partial_decrypt.second;
-    this->db_driver->insert_partial_decryption(partialRow);
+    //todo:!!
+    std::vector<PartialDecryptionRow> partialRows;
+    for(int i = 0; i < this->t; i++) {
+        PartialDecryptionRow partialRow;
+        partialRow.arbiter_id = arbiter_config.arbiter_id;
+        partialRow.arbiter_vk_path = arbiter_config.arbiter_public_key_path;
+        partialRow.dec = partial_decrypt.first;
+        partialRow.zkp = partial_decrypt.second;
+        partialRows.push_back(partialRow);
+    }
+
+    this->db_driver->insert_partial_decryption(partialRows);
+    
 
 }

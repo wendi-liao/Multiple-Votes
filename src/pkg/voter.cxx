@@ -333,23 +333,35 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
     //1) Verifies all vote ZKPs and their signatures
     // TallyerToWorld_Vote_Message
     std::vector<VoteRow> votes = db_driver->all_votes();
-    CryptoPP::Integer vote_tot = 0;
-    Vote_Ciphertext combine_vote;
-    combine_vote.a = 1;
-    combine_vote.b = 1;
-    for(auto &vote_msg:votes) {
-        //TallyerToWorld_Vote_Message
-        if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote_msg.vote, vote_msg.zkp), this->EG_arbiter_public_key)) 
-            continue;
-        if(!crypto_driver->RSA_BLIND_verify(RSA_registrar_verification_key, vote_msg.vote, vote_msg.unblinded_signature)) 
-            continue;    
-        if(!crypto_driver->RSA_verify(RSA_tallyer_verification_key, concat_vote_zkp_and_signature(vote_msg.vote, vote_msg.zkp, vote_msg.unblinded_signature), vote_msg.tallyer_signature))
-            continue;    
-        
-        vote_tot++;
-        combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.vote.a, DL_P);
-        combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.vote.b, DL_P);
+    //check every voter:
+    for (auto it = votes.begin(); it != votes.end(); ) {
+        auto &vMsg = *it;
+        if(!crypto_driver->RSA_verify(RSA_tallyer_verification_key, 
+            concat_votes_zkps_and_signatures(vMsg.votes, vMsg.zkps, vMsg.unblinded_signatures), vMsg.tallyer_signature)) {
+            it = votes.erase(it);
+        } else {
+            ++it;
+        }
     }
+    //check every voter's single vote and combine them
+    std::vector<Vote_Ciphertext> combine_votes;
+    for(int i = 0; i < this->t; i++) {
+        Vote_Ciphertext combine_vote;
+        combine_vote.a = 1;
+        combine_vote.b = 1;
+        for(auto &vMsg: votes) {
+            Vote_Ciphertext vote = vMsg.votes.ct[i];
+            VoteZKP_Struct zkp = vMsg.zkps.zkp[i];
+            if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote, zkp), this->EG_arbiter_public_key)) 
+                continue;
+            if(!crypto_driver->RSA_BLIND_verify(RSA_registrar_verification_key, vote, unblinded_signature)) 
+                continue;    
+            combine_vote.a = a_times_b_mod_c(combine_vote.a, vote.a, DL_P);
+            combine_vote.b = a_times_b_mod_c(combine_vote.b, vote.b, DL_P);
+        }
+       combine_votes.push_back(combine_vote);
+    }    
+
     std::vector<PartialDecryptionRow> partial_dec = db_driver->all_partial_decryptions();
     std::vector<PartialDecryptionRow> valid_partial_decryptions;
     for(auto dec_msg: partial_dec) {

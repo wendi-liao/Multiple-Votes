@@ -210,11 +210,10 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
     std::string sign_tallyer = chvec2str(vote_cipher_data) + chvec2str(zkp_data) +  chvec2str(signature_data);
     std::string signature_tallyer = crypto_driver->RSA_sign(RSA_tallyer_signing_key, str2chvec(sign_tallyer)); //string
     
-    //todo:!!!
     VoteRow t2w_msg;
-    t2w_msg.vote = v2t.vote;
-    t2w_msg.zkp = v2t.zkp;
-    t2w_msg.unblinded_signature = v2t.unblinded_signature;
+    t2w_msg.votes = v2t.votes;
+    t2w_msg.zkps = v2t.zkps;
+    t2w_msg.unblinded_signatures = v2t.unblinded_signatures;
     t2w_msg.tallyer_signature = signature_tallyer;
 
     db_driver->insert_vote(t2w_msg);

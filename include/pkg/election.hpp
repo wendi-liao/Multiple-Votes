@@ -30,7 +30,7 @@ public:
   VerifyPartialDecryptZKP(ArbiterToWorld_PartialDecryption_Message a2w_dec_s,
                           CryptoPP::Integer pki);
 
-  static Vote_Ciphertext CombineVotes(std::vector<VoteRow> all_votes);
+  static std::vector<Vote_Ciphertext> CombineVotes(std::vector<VoteRow> all_votes);
   static CryptoPP::Integer
   CombineResults(Vote_Ciphertext combined_vote,
                  std::vector<PartialDecryptionRow> all_partial_decryptions);

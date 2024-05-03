@@ -169,7 +169,7 @@ void RegistrarClient::HandleRegister(
     //id, vote
     RegistrarToVoter_Blind_Signature_Message r2v_sig_s;
     RegistrarToVoter_Blind_Signature_Message voter = db_driver->find_voter(v2r_rgs_m.id);
-    if(voter.id != "") { // todo: find out what's it like
+    if(voter.id != "") {
         r2v_sig_s = voter;
     }else {
         r2v_sig_s.id = v2r_rgs_m.id;
