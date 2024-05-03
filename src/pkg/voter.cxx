@@ -33,7 +33,7 @@ VoterClient::VoterClient(std::shared_ptr<NetworkDriver> network_driver,
   this->cli_driver->init();
   this->t = 5;
   this->k = 5;
-  assert(this->k < this-> && "the allowed voting number too large");
+  assert(this->k <= this->t && "the allowed voting number is too large");
   initLogger();
 
 
@@ -67,22 +67,22 @@ VoterClient::VoterClient(std::shared_ptr<NetworkDriver> network_driver,
   // Load vote info (vote, zkp, registrar signature, and blind)
   // This is info voter should generate or receive after registering
   try {
-    Vote_Ciphertext vote;
-    LoadVote(this->voter_config.voter_vote_path, vote);
-    this->vote = vote;
+    Multi_Vote_Ciphertext votes;
+    LoadVotes(this->voter_config.voter_vote_path, votes);
+    this->votes = votes;
 
-    VoteZKP_Struct zkp;
-    LoadVoteZKP(this->voter_config.voter_vote_zkp_path, zkp);
-    this->vote_zkp = zkp;
+    Multi_VoteZKP_Struct zkps;
+    LoadVoteZKPs(this->voter_config.voter_vote_zkp_path, zkps);
+    this->vote_zkps = zkps;
 
-    CryptoPP::Integer registrar_signature;
-    LoadInteger(this->voter_config.voter_registrar_signature_path,
-                registrar_signature);
-    this->registrar_signature = registrar_signature;
+    Multi_Integer registrar_signatures;
+    LoadIntegers(this->voter_config.voter_registrar_signature_path,
+                registrar_signatures);
+    this->registrar_signatures = registrar_signatures;
 
-    CryptoPP::Integer blind;
-    LoadInteger(this->voter_config.voter_blind_path, blind);
-    this->blind = blind;
+    Multi_Integer blinds;
+    LoadIntegers(this->voter_config.voter_blind_path, blinds);
+    this->blinds = blinds;
   } catch (CryptoPP::FileStore::OpenErr) {
     this->cli_driver->print_warning(
         "Error loading vote info; voter may still need to register.");
@@ -255,7 +255,7 @@ void VoterClient::HandleRegister(std::string input) {
  * to the tallyer.
  */
 void VoterClient::HandleVote(std::string input) {
-  // Parse input and connect to tallyer
+/*  // Parse input and connect to tallyer
   std::vector<std::string> args = string_split(input, ' ');
   if (args.size() != 3) {
     this->cli_driver->print_warning("usage: vote <address> <port>");
@@ -295,6 +295,7 @@ void VoterClient::HandleVote(std::string input) {
   // --------------------------------
   // Exit cleanly.
   this->network_driver->disconnect();
+  */
 }
 
 /**

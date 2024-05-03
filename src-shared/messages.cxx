@@ -131,7 +131,7 @@ void Multi_Integer::serialize(std::vector<unsigned char> &data) {
     }
 }
 
-void Multi_Integer::deserialize(std::vector<unsigned char> &data) {
+int Multi_Integer::deserialize(std::vector<unsigned char> &data) {
     assert(data[0] == MessageType::VoterToTallyer_Vote_Message);
     // Get fields.
     int n = 1;
@@ -142,6 +142,7 @@ void Multi_Integer::deserialize(std::vector<unsigned char> &data) {
             std::vector<unsigned char>(data.begin() + n, data.end());
         n += get_integer(&this->ints[idx++], data, n);
     }
+    return n;
 }
 
 // ================================================
@@ -324,7 +325,7 @@ void Multi_Vote_Ciphertext::serialize(std::vector<unsigned char> &data) {
 /**
  * deserialize Multi_Vote_Ciphertext.
  */
-void Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
+int Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
   // Check correct message type.
   assert(data[0] == MessageType::Multi_Vote_Ciphertext);
 

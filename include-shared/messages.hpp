@@ -96,7 +96,7 @@ struct Multi_Integer : public Serializable {
 
     void serialize(std::vector<unsigned char> &data);
     int deserialize(std::vector<unsigned char> &data);
-}
+};
 // ================================================
 // KEY EXCHANGE
 // ================================================

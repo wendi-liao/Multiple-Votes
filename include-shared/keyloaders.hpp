@@ -38,3 +38,6 @@ void SaveVotes(const std::string &filename, Multi_Vote_Ciphertext &votes);
 void SaveVoteZKPs(const std::string &filename, Multi_VoteZKP_Struct &vote_zkp);
 void SaveIntegers(const std::string &filename, Multi_Integer &i);
 
+void LoadVotes(const std::string &filename, Multi_Vote_Ciphertext &vote);
+void LoadVoteZKPs(const std::string &filename, Multi_VoteZKP_Struct &vote_zkp);
+void LoadIntegers(const std::string &filename, Multi_Integer &i);

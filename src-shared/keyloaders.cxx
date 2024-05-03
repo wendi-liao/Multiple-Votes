@@ -141,8 +141,41 @@ void SaveVoteZKPs(const std::string &filename, Multi_VoteZKP_Struct &vote_zkps){
 
 void SaveIntegers(const std::string &filename, Multi_Integer &i){
     std::vector<unsigned char> integers_serialized;
-    vote_zkps.serialize(integers_serialized);
+    i.serialize(integers_serialized);
     std::string integers_str = chvec2str(integers_serialized);
     CryptoPP::StringSource(integers_str, true,
                             new CryptoPP::FileSink(filename.c_str()));
+}
+
+
+/**
+ * Load the votes struct from the file.
+ */
+void LoadVotes(const std::string &filename, Multi_Vote_Ciphertext &vote) {
+  std::string vote_str;
+  CryptoPP::FileSource(filename.c_str(), true,
+                       new CryptoPP::StringSink(vote_str));
+  std::vector<unsigned char> vote_serialized = str2chvec(vote_str);
+  vote.deserialize(vote_serialized);
+}
+
+/**
+ * Load the vote ZKP struct from the file.
+ */
+void LoadVoteZKPs(const std::string &filename, Multi_VoteZKP_Struct &vote_zkp) {
+  std::string vote_zkp_str;
+  CryptoPP::FileSource(filename.c_str(), true,
+                       new CryptoPP::StringSink(vote_zkp_str));
+  std::vector<unsigned char> vote_zkp_serialized = str2chvec(vote_zkp_str);
+  vote_zkp.deserialize(vote_zkp_serialized);
+}
+
+/**
+ * Load integers from the file.
+ */
+void LoadIntegers(const std::string &filename, Multi_Integer &i) {
+  std::string i_str;
+  CryptoPP::FileSource(filename.c_str(), true, new CryptoPP::StringSink(i_str));
+  std::vector<unsigned char> i_serialized = str2chvec(i_str);
+  i.deserialize(i_serialized);
 }
