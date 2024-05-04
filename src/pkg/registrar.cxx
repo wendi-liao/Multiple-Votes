@@ -170,7 +170,7 @@ void RegistrarClient::HandleRegister(
     //todo: change it so that voter can be inserted for multiple times 
     //if needed: VoterToRegistrar_Register_Message 可以加一个参数，
     RegistrarToVoter_Blind_Signature_Message r2v_sig_s;
-    RegistrarToVoter_Blind_Signature_Message voter = db_driver->find_voter(v2r_rgs_m.id);
+    RegistrarToVoter_Blind_Signature_Message voter = db_driver->find_voter(v2r_rgs_m.id, v2r_rgs_m.candidate_id);
     // for(int i = 0; i < this->t; i++) {
         
     // }
@@ -179,7 +179,7 @@ void RegistrarClient::HandleRegister(
     }else {
         r2v_sig_s.id = v2r_rgs_m.id;
         r2v_sig_s.registrar_signature = crypto_driver->RSA_BLIND_sign(RSA_registrar_signing_key, v2r_rgs_m.vote); //  CryptoPP::Integer 
-        db_driver->insert_voter(r2v_sig_s);
+        db_driver->insert_voter(r2v_sig_s, v2r_rgs_m.candidate_id);
     }
     std::vector<unsigned char> r2v_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &r2v_sig_s);
     network_driver->send(r2v_raw_data);

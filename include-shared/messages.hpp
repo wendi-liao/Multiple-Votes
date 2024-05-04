@@ -132,6 +132,7 @@ struct ServerToUser_DHPublicValue_Message : public Serializable {
 
 struct VoterToRegistrar_Register_Message : public Serializable {
   std::string id;
+  std::string candidate_id;
   CryptoPP::Integer vote;
 
   void serialize(std::vector<unsigned char> &data);

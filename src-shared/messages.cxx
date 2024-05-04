@@ -256,6 +256,7 @@ void VoterToRegistrar_Register_Message::serialize(
 
   // Add fields.
   put_string(this->id, data);
+  put_string(this->id, candidate_id);
   put_integer(this->vote, data);
 }
 
@@ -271,6 +272,7 @@ int VoterToRegistrar_Register_Message::deserialize(
   std::string user_verification_key_str;
   int n = 1;
   n += get_string(&this->id, data, n);
+  n += get_string(&this->candidate_id, data, n);
   n += get_integer(&this->vote, data, n);
   return n;
 }

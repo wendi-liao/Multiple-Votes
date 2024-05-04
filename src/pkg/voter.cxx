@@ -189,6 +189,9 @@ void VoterClient::HandleRegister(std::string input) {
 
     std::cout<<"Regi Hand finish"<<std::endl;
     
+    // 修改: 增加此变量记录当前voter在给第candidate_id个人投票
+    int candidate_id = 0;
+
     for(auto &raw_vote: raw_votes) {
         // 2) ElGamal encrypt the raw vote and generate a ZKP for it
         // through `ElectionClient::GenerateVote`.
@@ -203,6 +206,9 @@ void VoterClient::HandleRegister(std::string input) {
 
         VoterToRegistrar_Register_Message v2r;
         v2r.id = voter_id;
+        // 修改后的VoterToRegistrar_Register_Message新添一个candidate_id 的field
+        candidate_id = std::to_string(candidate_id);
+        candidate_id ++;
         v2r.vote = blinded_msg;
         std::vector<unsigned char> v2r_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &v2r);
         network_driver->send(v2r_raw_data);

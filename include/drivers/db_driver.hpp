@@ -19,8 +19,8 @@ public:
   void init_tables();
   void reset_tables();
 
-  VoterRow find_voter(std::string id);
-  VoterRow insert_voter(VoterRow voter);
+  VoterRow find_voter(std::string id, std::string candidate_id);
+  VoterRow insert_voter(VoterRow voter, std::string candidate_id);
 
   std::vector<VoteRow> all_votes();
   VoteRow find_vote(Vote_Ciphertext vote);

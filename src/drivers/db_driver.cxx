@@ -35,8 +35,10 @@ void DBDriver::init_tables() {
   std::unique_lock<std::mutex> lck(this->mtx);
 
   // create voter table
+  // 修改：Voter 表主键更改为（id, candidate_id）
   std::string create_voter_query = "CREATE TABLE IF NOT EXISTS voter("
-                                   "id TEXT PRIMARY KEY NOT NULL, "
+                                   "id TEXT PRIMARY KEY NOT NULL,"
+                                   "candidate_id TEXT PRIMARY KEY,"
                                    "registrar_signature TEXT NOT NULL);";
   char *err;
   int exit = sqlite3_exec(this->db, create_voter_query.c_str(), NULL, 0, &err);
@@ -138,19 +140,23 @@ void DBDriver::reset_tables() {
 
 /**
  * Find the given voter. Returns an empty voter if none was found.
+ * VoterRow 即为RegistrarToVoter_Blind_Signature_Message
  */
-VoterRow DBDriver::find_voter(std::string id) {
+VoterRow DBDriver::find_voter(std::string id, std::string candidate_id) {
   // Lock db driver.
+  // 修改为find_voter(id, candidate_id)
   std::unique_lock<std::mutex> lck(this->mtx);
 
   std::string find_query = "SELECT id, registrar_signature "
-                           "FROM voter WHERE id = ?";
+                           "FROM voter WHERE id = ? AND candidate_id = ?";
 
   // Prepare statement.
   sqlite3_stmt *stmt;
   sqlite3_prepare_v2(this->db, find_query.c_str(), find_query.length(), &stmt,
                      nullptr);
   sqlite3_bind_blob(stmt, 1, id.c_str(), id.length(), SQLITE_STATIC);
+  // 修改:第二个传入参数为candidate_id
+  sqlite3_bind_blob(stmt, 2, candidate_id.c_str(), candidate_id.length(), SQLITE_STATIC);
 
   // Retreive voter.
   VoterRow voter;
@@ -182,13 +188,14 @@ VoterRow DBDriver::find_voter(std::string id) {
 
 /**
  * Insert the given voter; prints an error if violated a primary key constraint.
+ * VoterRow 即为RegistrarToVoter_Blind_Signature_Message
  */
-VoterRow DBDriver::insert_voter(VoterRow voter, int candidate_id) {
+VoterRow DBDriver::insert_voter(VoterRow voter, std::string candidate_id) {
   // Lock db driver.
   std::unique_lock<std::mutex> lck(this->mtx);
 
-  std::string insert_query = "INSERT INTO voter(id, registrar_signature) " ，candidate_id
-                             "VALUES(?, ?);";
+  std::string insert_query = "INSERT INTO voter(id, candidate_id, registrar_signature) "
+                             "VALUES(?,?,?);";
 
   // Serialize voter fields.
   std::string registrar_signature_str =
@@ -200,7 +207,9 @@ VoterRow DBDriver::insert_voter(VoterRow voter, int candidate_id) {
                      &stmt, nullptr);
   sqlite3_bind_blob(stmt, 1, voter.id.c_str(), voter.id.length(),
                     SQLITE_STATIC);
-  sqlite3_bind_blob(stmt, 2, registrar_signature_str.c_str(),
+  sqlite3_bind_blob(stmt, 2, candidate_id.c_str(), candidate_id.length(),
+                    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 3, registrar_signature_str.c_str(),
                     registrar_signature_str.length(), SQLITE_STATIC);
 
   // Run and return.

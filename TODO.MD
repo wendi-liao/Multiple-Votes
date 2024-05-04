@@ -10,7 +10,7 @@ voter有多个votes，目前做的是把一个个vote拆分出来发给registra�
 方案1：VoterToRegistrar_Register_Message 结构不变/或加一个参数，表示有多少个candidate。每次给数据库传入单个vote（也许再加上vote的编号？），判断该投票者是否已经投了该票；
 方案2：把所有票一次性传过来，那么VoterToRegistrar_Register_Message 结构要变。insert_voter 把所有votes都塞进去；
 方案3：把所有票一次性传过来，那么VoterToRegistrar_Register_Message 结构要变。
-insert_voter, + candidate_id
+insert_voter, + candidate_id (by wenxi 5.4: candidate_id 从0开始)
 
 
 Voter - Tallyer
