@@ -180,7 +180,7 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
     assert(this->t == v2t.unblinded_signatures.ints.size() && this->t == v2t.zkps.zkp.size() && "vector should have same size!");
     for(int i = 0; i < this->t; i++) {
         Vote_Ciphertext vote = v2t.votes.ct[i];
-        Multi_VoteZKP_Struct zkp = v2t.zkps.zkp[i];
+        VoteZKP_Struct zkp = v2t.zkps.zkp[i];
         CryptoPP::Integer unblinded_signature = v2t.unblinded_signatures.ints[i];
         if(!crypto_driver->RSA_BLIND_verify(this->RSA_registrar_verification_key, vote, unblinded_signature)) {
             std::cerr<< "blind verification fails!"<<std::endl;
@@ -214,7 +214,7 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
     t2w_msg.votes = v2t.votes;
     t2w_msg.zkps = v2t.zkps;
     t2w_msg.unblinded_signatures = v2t.unblinded_signatures;
-    t2w_msg.tallyer_signature = signature_tallyer;
+    t2w_msg.tallyer_signatures = signature_tallyer;
 
     db_driver->insert_vote(t2w_msg);
 

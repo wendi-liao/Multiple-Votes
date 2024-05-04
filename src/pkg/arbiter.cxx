@@ -110,11 +110,11 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
     std::vector<VoteRow> valid_vote;
     for(auto &vMsg: allV) {
         this->t = vMsg.votes.ct.size();
+        bool invalid_voter = false;
         for(int i = 0; i < this->t; i++) {
             Vote_Ciphertext vote =  vMsg.votes.ct[i];
             CryptoPP::Integer unblinded_signature =  vMsg.unblinded_signatures.ints[i];
-            VoteZKP_Struct zkp =  vMsg.zkps.ints[i];
-            bool invalid_voter = false;
+            VoteZKP_Struct zkp =  vMsg.zkps.zkp[i];
             if(!crypto_driver->RSA_BLIND_verify(this->RSA_registrar_verification_key, vote, unblinded_signature)) {
                 throw std::runtime_error("Arbiter:blind verification fails!");
                 invalid_voter = true;
@@ -137,7 +137,7 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
         vMsg.unblinded_signatures.serialize(signature_data);
         
         std::string sign_tallyer = chvec2str(vote_cipher_data) + chvec2str(zkp_data) + chvec2str(signature_data); 
-        if(!crypto_driver->RSA_verify(this->RSA_tallyer_verification_key, str2chvec(sign_tallyer), vMsg.tallyer_signature)) {
+        if(!crypto_driver->RSA_verify(this->RSA_tallyer_verification_key, str2chvec(sign_tallyer), vMsg.tallyer_signatures)) {
             throw std::runtime_error("Arbiter:tallyer_signature verification fails!");
             continue;
         }
@@ -162,6 +162,7 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
     std::vector<PartialDecryptionRow> partialRows;
     for(int i = 0; i < this->t; i++) {
         PartialDecryptionRow partialRow;
+        auto partial_decrypt = partial_decryptions[i];
         partialRow.arbiter_id = arbiter_config.arbiter_id;
         partialRow.arbiter_vk_path = arbiter_config.arbiter_public_key_path;
         partialRow.dec = partial_decrypt.first;
@@ -169,7 +170,7 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
         partialRows.push_back(partialRow);
     }
 
-    this->db_driver->insert_partial_decryption(partialRows);
+    this->db_driver->insert_partial_decryptions(partialRows);
     
 
 }

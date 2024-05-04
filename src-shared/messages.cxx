@@ -511,7 +511,7 @@ void TallyerToWorld_Vote_Message::serialize(std::vector<unsigned char> &data) {
   this->unblinded_signatures.serialize(int_data);
   data.insert(data.end(), int_data.begin(), int_data.end());
 
-  put_string(this->tallyer_signature, data);
+  put_string(this->tallyer_signatures, data);
 }
 
 /**
@@ -535,7 +535,7 @@ int TallyerToWorld_Vote_Message::deserialize(std::vector<unsigned char> &data) {
       std::vector<unsigned char>(data.begin() + n, data.end());
   n += this->unblinded_signatures.deserialize(signature_slice);
 
-  n += get_string(&this->tallyer_signature, data, n);
+  n += get_string(&this->tallyer_signatures, data, n);
   return n;
 }
 

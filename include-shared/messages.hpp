@@ -105,7 +105,7 @@ struct Multi_String : public Serializable{
 
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);
-}
+};
 // ================================================
 // KEY EXCHANGE
 // ================================================
@@ -255,4 +255,6 @@ std::vector<unsigned char>
 concat_vote_zkp_and_signature(Vote_Ciphertext &vote, VoteZKP_Struct &zkp,
                               CryptoPP::Integer &signature);
 
-
+std::vector<unsigned char>
+concat_votes_zkps_and_signatures(Multi_Vote_Ciphertext &vote, Multi_VoteZKP_Struct &zkp,
+                              Multi_Integer &signature);

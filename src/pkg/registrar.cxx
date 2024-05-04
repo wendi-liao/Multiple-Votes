@@ -167,8 +167,13 @@ void RegistrarClient::HandleRegister(
     VoterToRegistrar_Register_Message v2r_rgs_m;
     v2r_rgs_m.deserialize(v2r_data.first);
     //id, vote
+    //todo: change it so that voter can be inserted for multiple times 
+    //if needed: VoterToRegistrar_Register_Message 可以加一个参数，
     RegistrarToVoter_Blind_Signature_Message r2v_sig_s;
     RegistrarToVoter_Blind_Signature_Message voter = db_driver->find_voter(v2r_rgs_m.id);
+    // for(int i = 0; i < this->t; i++) {
+        
+    // }
     if(voter.id != "") {
         r2v_sig_s = voter;
     }else {

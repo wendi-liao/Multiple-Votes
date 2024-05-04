@@ -7,8 +7,11 @@ voter有多个votes，目前做的是把一个个vote拆分出来发给registra�
 但是这样做：原来有一个查找该voter是否投票过的方法，就不能这么用了。
 
 *todo：数据库结构怎么规划？（我们可以讨论一下）
-方案1：VoterToRegistrar_Register_Message 结构不变。每次给数据库传入单个vote（也许再加上vote的编号？），判断该投票者是否已经投了该票；
-方案2：把所有票一次性传过来，那么VoterToRegistrar_Register_Message 结构要变。每次给数据库传入所有的votes，判断该投票者是否已经投了票；*
+方案1：VoterToRegistrar_Register_Message 结构不变/或加一个参数，表示有多少个candidate。每次给数据库传入单个vote（也许再加上vote的编号？），判断该投票者是否已经投了该票；
+方案2：把所有票一次性传过来，那么VoterToRegistrar_Register_Message 结构要变。insert_voter 把所有votes都塞进去；
+方案3：把所有票一次性传过来，那么VoterToRegistrar_Register_Message 结构要变。
+insert_voter, + candidate_id
+
 
 Voter - Tallyer
 voter有多个votes，目前做的是把votes合并到一起发给Tallyer，
@@ -26,6 +29,4 @@ Voter-Verify
 *db_driver->all_partial_decryptions(); 待修改*
 lwd的想法：db_driver->all_partial_decryptions(i), 加一个参数i，代表返回针对candidate i的投票结果。（也许名字也应该改成：db_driver->some_partial_decryptions(i)(bushi)）
 
-这里和arbiter ’this->db_driver->insert_partial_decryption(partialRows);‘相互对应。返回的是就是vector<std::vector<PartialDecryptionRow>>
-我们可以讨论一下有关这个结构，是否需要给std::vector<PartialDecryptionRow>建立一个struct？
-(这里的代码部分lwd还没有改)
+这里和arbiter ’this->db_driver->insert_partial_decryption(partialRows);‘相互对应。

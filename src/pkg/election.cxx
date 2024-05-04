@@ -152,15 +152,15 @@ bool ElectionClient::VerifyPartialDecryptZKP(
 std::vector<Vote_Ciphertext> ElectionClient::CombineVotes(std::vector<VoteRow> all_votes) {
   initLogger();
   // TODO: implement me!
-    int t = all_votes[0].votes.size(); // t candidates
+    int t = all_votes[0].votes.ct.size(); // t candidates
     std::vector<Vote_Ciphertext> combined_votes;
     for(int i = 0; i < t; i++) {
         Vote_Ciphertext combine_vote;
         combine_vote.a = 1;
         combine_vote.b = 1;
         for(auto &vote_msg: all_votes) {
-            combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.votes[i].a, DL_P);
-            combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.votes[i].b, DL_P);
+            combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.votes.ct[i].a, DL_P);
+            combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.votes.ct[i].b, DL_P);
         }
         combined_votes.push_back(combine_vote);
     }

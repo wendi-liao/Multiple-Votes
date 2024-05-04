@@ -171,7 +171,6 @@ void VoterClient::HandleRegister(std::string input) {
   // Load some info from config into variables
   std::string voter_id = this->voter_config.voter_id;
   std::vector<CryptoPP::Integer> raw_votes;
-//    = CryptoPP::Integer(std::stoi(args[3]));
     std::vector<std::string> raw_vote_strings;
     std::stringstream ss(args[3]);
     std::string raw_vote_string;
@@ -283,8 +282,8 @@ void VoterClient::HandleVote(std::string input) {
     //3) Sends the vote, ZKP, and unblinded signature to the tallyer.
     VoterToTallyer_Vote_Message v2t;
     v2t.votes = this->votes;
-    v2t.unblinded_signature = registrar_signatures_unbinded;
-    v2t.zkp = this->vote_zkps;
+    v2t.unblinded_signatures = registrar_signatures_unbinded;
+    v2t.zkps = this->vote_zkps;
 
     std::vector<unsigned char> v2t_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &v2t);
     network_driver->send(v2t_raw_data);
@@ -325,7 +324,7 @@ void VoterClient::HandleVerify(std::string input) {
  * 1) Verifies all vote ZKPs and their signatures
  * 2) Verifies all partial decryption ZKPs
  * 3) Combines the partial decryptions to retrieve the final result
- * 4) Returns a tuple of <0-votes, 1-votes, success>
+ * 4) Returns a vector - the number of votes every candidate receives
  * If a vote is invalid, simply *ignore* it: do not throw an error.
  */
 std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
@@ -337,7 +336,7 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
     for (auto it = votes.begin(); it != votes.end(); ) {
         auto &vMsg = *it;
         if(!crypto_driver->RSA_verify(RSA_tallyer_verification_key, 
-            concat_votes_zkps_and_signatures(vMsg.votes, vMsg.zkps, vMsg.unblinded_signatures), vMsg.tallyer_signature)) {
+            concat_votes_zkps_and_signatures(vMsg.votes, vMsg.zkps, vMsg.unblinded_signatures), vMsg.tallyer_signatures)) {
             it = votes.erase(it);
         } else {
             ++it;
@@ -345,13 +344,14 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
     }
     //check every voter's single vote and combine them
     std::vector<Vote_Ciphertext> combine_votes;
-    for(int i = 0; i < this->t; i++) {
+    for(int i = 0; i < this->t; i++) { // 对于每一纵列（candidate），按照原有的程序进行
         Vote_Ciphertext combine_vote;
         combine_vote.a = 1;
         combine_vote.b = 1;
         for(auto &vMsg: votes) {
             Vote_Ciphertext vote = vMsg.votes.ct[i];
             VoteZKP_Struct zkp = vMsg.zkps.zkp[i];
+            CryptoPP::Integer unblinded_signature = vMsg.unblinded_signatures.ints[i];
             if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote, zkp), this->EG_arbiter_public_key)) 
                 continue;
             if(!crypto_driver->RSA_BLIND_verify(RSA_registrar_verification_key, vote, unblinded_signature)) 
@@ -361,9 +361,9 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
         }
        combine_votes.push_back(combine_vote);
     }    
-
+    std::vector<CryptoPP::Integer> res;
     for(int i = 0; i < this->t; i ++) {
-        std::vector<PartialDecryptionRow> partial_dec = db_driver->all_partial_decryptions(i);
+        std::vector<PartialDecryptionRow> partial_dec = db_driver->row_partial_decryptions(i); //这里改了，对于第i列（也就是第i个candidate），求取它的情况
         std::vector<PartialDecryptionRow> valid_partial_decryptions;
         for(auto dec_msg: partial_dec) {
             CryptoPP::Integer pki;
@@ -378,8 +378,11 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
             std::cout<<"error for finding the final result!"<<std::endl;
             return std::make_tuple(0, 0, false);
         }
+        //todo：res的含义 待确认！
         std::cout<<"As for candidate "<<i<<", it receives vote "<<ret<<std::endl;
+        res.push_back(ret);
     }
-    return std::make_tuple(vote_tot - ret, ret, true);
+    return std::make_tuple(0, 0, 1);//todo
+
   
 }
