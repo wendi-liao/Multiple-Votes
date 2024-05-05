@@ -56,26 +56,10 @@ void DBDriver::init_tables() {
   //                                 "tallyer_signature TEXT NOT NULL);";
 
   std::string create_vote_query = "CREATE TABLE IF NOT EXISTS vote("
-                                  "vote1 TEXT PRIMARY KEY  NOT NULL,"
-                                  "vote2 TEXT PRIMARY KEY  NOT NULL,"
-                                  "vote3 TEXT PRIMARY KEY  NOT NULL,"
-                                  "vote4 TEXT PRIMARY KEY  NOT NULL,"
-                                  "vote5 TEXT PRIMARY KEY  NOT NULL,"
-                                  "zkp1 TEXT NOT NULL,"
-                                  "zkp2 TEXT NOT NULL,"
-                                  "zkp3 TEXT NOT NULL,"
-                                  "zkp4 TEXT NOT NULL,"
-                                  "zkp5 TEXT NOT NULL,"
-                                  "unblinded_signature1 TEXT NOT NULL,"
-                                  "unblinded_signature2 TEXT NOT NULL,"
-                                  "unblinded_signature3 TEXT NOT NULL,"
-                                  "unblinded_signature4 TEXT NOT NULL,"
-                                  "unblinded_signature5 TEXT NOT NULL,"
-                                  "tallyer_signature1 TEXT NOT NULL,"
-                                  "tallyer_signature2 TEXT NOT NULL,"
-                                  "tallyer_signature3 TEXT NOT NULL,"
-                                  "tallyer_signature4 TEXT NOT NULL,"   
-                                  "tallyer_signature5 TEXT NOT NULL);";
+                                  "votes TEXT PRIMARY KEY  NOT NULL, "
+                                  "zkps TEXT NOT NULL, "
+                                  "unblinded_signatures TEXT NOT NULL,"
+                                  "tallyer_signatures TEXT NOT NULL);";
 
   exit = sqlite3_exec(this->db, create_vote_query.c_str(), NULL, 0, &err);
   if (exit != SQLITE_OK) {
@@ -236,11 +220,7 @@ std::vector<VoteRow> DBDriver::all_votes() {
   std::unique_lock<std::mutex> lck(this->mtx);
 
   std::string find_query =
-      "SELECT vote1, vote2, vote3, vote4, vote5, "
-      "zkp1, zkp2, zkp3, zkp4, zkp5, "
-      "unblinded_signature1, unblinded_signature2, unblinded_signature3,unblinded_signature4,unblinded_signature5,"
-      "tallyer_signature1, tallyer_signature2, tallyer_signature3, tallyer_signature4, tallyer_signature5"
-      "FROM vote";
+      "SELECT votes, zkps, unblinded_signatures, tallyer_signatures FROM vote";
 
   // Prepare statement.
   sqlite3_stmt *stmt;
@@ -258,18 +238,18 @@ std::vector<VoteRow> DBDriver::all_votes() {
       switch (colIndex) {
       case 0:
         data = str2chvec(std::string((const char *)raw_result, num_bytes));
-        vote.vote.deserialize(data);
+        vote.votes.deserialize(data);
         break;
       case 1:
         data = str2chvec(std::string((const char *)raw_result, num_bytes));
-        vote.zkp.deserialize(data);
+        vote.zkps.deserialize(data);
         break;
       case 2:
-        vote.unblinded_signature =
-            CryptoPP::Integer(std::string((const char *)raw_result).c_str());
+        data = str2chvec(std::string((const char *)raw_result, num_bytes));
+        vote.unblinded_signatures.deserialize(data);
         break;
       case 3:
-        vote.tallyer_signature =
+        vote.tallyer_signatures =
             std::string((const char *)raw_result, num_bytes);
         break;
       }
@@ -288,7 +268,7 @@ std::vector<VoteRow> DBDriver::all_votes() {
 /**
  * Find the given vote. Returns an empty vote if none was found.
  */
-VoteRow DBDriver::find_vote(Vote_Ciphertext vote_s) {
+/*VoteRow DBDriver::find_vote(Vote_Ciphertext vote_s) {
   // Lock db driver.
   std::unique_lock<std::mutex> lck(this->mtx);
 
@@ -341,7 +321,7 @@ VoteRow DBDriver::find_vote(Vote_Ciphertext vote_s) {
     std::cerr << "Error finding vote " << std::endl;
   }
   return vote;
-}
+}*/
 
 /**
  * Insert the given vote; prints an error if violated a primary key constraint.
@@ -350,34 +330,41 @@ VoteRow DBDriver::insert_vote(VoteRow vote) {
   // Lock db driver.
   std::unique_lock<std::mutex> lck(this->mtx);
 
-  std::string insert_query = "INSERT INTO vote(vote, zkp, unblinded_signature, "
-                             "tallyer_signature) VALUES(?, ?, ?, ?);";
+  std::string insert_query = "INSERT INTO vote(votes, zkps, unblinded_signatures, "
+                             "tallyer_signatures) VALUES(?, ?, ?, ?);";
 
-  // Serialize vote fields.
-  std::vector<unsigned char> vote_data;
-  vote.vote.serialize(vote_data);
-  std::string vote_str = chvec2str(vote_data);
+    Multi_Vote_Ciphertext votes = vote.votes;
+    Multi_VoteZKP_Struct zkps = vote.zkps;
+    Multi_Integer unblinded_signatures = vote.unblinded_signatures;
+    std::string tallyer_signatures = vote.tallyer_signatures;
 
-  std::vector<unsigned char> zkp_data;
-  vote.zkp.serialize(zkp_data);
-  std::string zkp_str = chvec2str(zkp_data);
+    // Serialize vote fields.
+    std::vector<unsigned char> vote_data;
+    votes.serialize(vote_data);
+    std::string vote_str = chvec2str(vote_data);
 
-  std::string unblinded_signature_str =
-      CryptoPP::IntToString(vote.unblinded_signature);
+    std::vector<unsigned char> zkp_data;
+    zkps.serialize(zkp_data);
+    std::string zkp_str = chvec2str(zkp_data);
 
-  std::string tallyer_signature_str = vote.tallyer_signature;
+    std::vector<unsigned char> sign_data;
+    unblinded_signatures.serialize(sign_data);
+    std::string unblinded_signature_str = chvec2str(sign_data);  
 
-  // Prepare statement.
-  sqlite3_stmt *stmt;
-  sqlite3_prepare_v2(this->db, insert_query.c_str(), insert_query.length(),
-                     &stmt, nullptr);
-  sqlite3_bind_blob(stmt, 1, vote_str.c_str(), vote_str.length(),
-                    SQLITE_STATIC);
-  sqlite3_bind_blob(stmt, 2, zkp_str.c_str(), zkp_str.length(), SQLITE_STATIC);
-  sqlite3_bind_blob(stmt, 3, unblinded_signature_str.c_str(),
-                    unblinded_signature_str.length(), SQLITE_STATIC);
-  sqlite3_bind_blob(stmt, 4, tallyer_signature_str.c_str(),
-                    tallyer_signature_str.length(), SQLITE_STATIC);
+    std::string tallyer_signature_str = tallyer_signatures;
+
+    // Prepare statement.
+    sqlite3_stmt *stmt;
+    sqlite3_prepare_v2(this->db, insert_query.c_str(), insert_query.length(),
+                        &stmt, nullptr);
+    sqlite3_bind_blob(stmt, 1, vote_str.c_str(), vote_str.length(),
+                        SQLITE_STATIC);
+    sqlite3_bind_blob(stmt, 2, zkp_str.c_str(), zkp_str.length(), SQLITE_STATIC);
+    sqlite3_bind_blob(stmt, 3, unblinded_signature_str.c_str(),
+                        unblinded_signature_str.length(), SQLITE_STATIC);
+    sqlite3_bind_blob(stmt, 4, tallyer_signature_str.c_str(),
+                        tallyer_signature_str.length(), SQLITE_STATIC);
+  
 
   // Run and return.
   sqlite3_step(stmt);
@@ -682,7 +669,7 @@ DBDriver::insert_partial_decryption(PartialDecryptionRow partial_decryption) {
  * newly added
  * Insert the given partial_decryptions;
  */
-PartialDecryptionRow
+std::vector<PartialDecryptionRow>
 DBDriver::insert_partial_decryptions(std::vector<PartialDecryptionRow> &partial_decryptions) {
   // Lock db driver.
   std::unique_lock<std::mutex> lck(this->mtx);
@@ -717,13 +704,14 @@ DBDriver::insert_partial_decryptions(std::vector<PartialDecryptionRow> &partial_
         sqlite3_bind_blob(stmt, 4, zkp_str.c_str(), zkp_str.length(), SQLITE_STATIC);
         sqlite3_bind_blob(stmt, 5, candidate_id_str.c_str(), candidate_id_str.length(), SQLITE_STATIC);
 
+        // Run and return.
+        sqlite3_step(stmt);
+        int exit = sqlite3_finalize(stmt);
+        if (exit != SQLITE_OK) {
+            std::cerr << "Error inserting partial_decryption " << std::endl;
+        }
     }
  
-  // Run and return.
-  sqlite3_step(stmt);
-  int exit = sqlite3_finalize(stmt);
-  if (exit != SQLITE_OK) {
-    std::cerr << "Error inserting partial_decryption " << std::endl;
-  }
-  return partial_decryption;
+
+  return partial_decryptions;
 }

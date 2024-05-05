@@ -32,7 +32,7 @@ public:
   PartialDecryptionRow
   insert_partial_decryption(PartialDecryptionRow partial_decryption);
   std::vector<PartialDecryptionRow> row_partial_decryptions(int id);
-  PartialDecryptionRow insert_partial_decryptions(std::vector<PartialDecryptionRow> &partial_decryptions);
+  std::vector<PartialDecryptionRow> insert_partial_decryptions(std::vector<PartialDecryptionRow> &partial_decryptions);
 
 private:
   std::mutex mtx;

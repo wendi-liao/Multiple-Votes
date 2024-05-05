@@ -39,8 +39,13 @@ void NetworkDriverImpl::connect(std::string address, int port) {
  */
 void NetworkDriverImpl::disconnect() {
   this->socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+  std::cout<<"shutdown!!"<<std::endl;
+
   this->socket->close();
+  std::cout<<"socket!!"<<std::endl;
+
   this->io_context.stop();
+  std::cout<<"dis!!"<<std::endl;
 }
 
 /**

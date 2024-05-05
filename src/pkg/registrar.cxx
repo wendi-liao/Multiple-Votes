@@ -158,6 +158,7 @@ void RegistrarClient::HandleRegister(
 
     //2) Gets user info and verifies that the user hasn't already registered. 
     // (if already registered, return existing signature).
+    std::cout<<"begin read!"<<std::endl;
     auto en_v2r_data = network_driver->read();
     auto v2r_data = crypto_driver->decrypt_and_verify(AES_key, HMAC_key, en_v2r_data);
     if(!v2r_data.second) {
@@ -166,14 +167,15 @@ void RegistrarClient::HandleRegister(
     }
     VoterToRegistrar_Register_Message v2r_rgs_m;
     v2r_rgs_m.deserialize(v2r_data.first);
+     std::cout<<"candidate: "<<v2r_rgs_m.candidate_id<<std::endl;
     //id, vote
     //todo: change it so that voter can be inserted for multiple times 
     //if needed: VoterToRegistrar_Register_Message 可以加一个参数，
     RegistrarToVoter_Blind_Signature_Message r2v_sig_s;
     RegistrarToVoter_Blind_Signature_Message voter = db_driver->find_voter(v2r_rgs_m.id, v2r_rgs_m.candidate_id);
-    // for(int i = 0; i < this->t; i++) {
-        
-    // }
+    
+    std::cout<<"has found voter"<<std::endl;
+
     if(voter.id != "") {
         r2v_sig_s = voter;
     }else {
@@ -183,8 +185,11 @@ void RegistrarClient::HandleRegister(
     }
     std::vector<unsigned char> r2v_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &r2v_sig_s);
     network_driver->send(r2v_raw_data);
+    std::cout<<"has sent"<<std::endl;
+
     
   // --------------------------------
   // Exit cleanly
   network_driver->disconnect();
+  std::cout<<"finish!"<<std::endl;
 }

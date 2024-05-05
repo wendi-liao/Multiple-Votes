@@ -183,7 +183,7 @@ void VoterClient::HandleRegister(std::string input) {
   // TODO: implement me!
     // 1) Handle key exchange.
     std::cout<<"Regi Hand"<<std::endl;
-    auto keys = HandleKeyExchange(RSA_registrar_verification_key);//todo: which verification key, when registering?
+    auto keys = HandleKeyExchange(RSA_registrar_verification_key);
     this->AES_key = keys.first;
     this->HMAC_key = keys.second;
 
@@ -193,11 +193,14 @@ void VoterClient::HandleRegister(std::string input) {
     int candidate_id = 0;
 
     for(auto &raw_vote: raw_votes) {
+        std::cout<<"for candidate "<<candidate_id<<std::endl;
         // 2) ElGamal encrypt the raw vote and generate a ZKP for it
         // through `ElectionClient::GenerateVote`.
         std::pair<Vote_Ciphertext, VoteZKP_Struct> encrypted_vote_and_zkp = ElectionClient::GenerateVote(raw_vote, this->EG_arbiter_public_key);
         Vote_Ciphertext vote_s = encrypted_vote_and_zkp.first;
         VoteZKP_Struct vote_zkp = encrypted_vote_and_zkp.second;
+
+        std::cout<<"blind vote "<<std::endl;
 
         //3) Blind the vote and send it to the registrar.
         auto msgs = crypto_driver->RSA_BLIND_blind(RSA_registrar_verification_key, vote_s); //std::pair<CryptoPP::Integer, CryptoPP::Integer> 
@@ -207,12 +210,13 @@ void VoterClient::HandleRegister(std::string input) {
         VoterToRegistrar_Register_Message v2r;
         v2r.id = voter_id;
         // 修改后的VoterToRegistrar_Register_Message新添一个candidate_id 的field
-        candidate_id = std::to_string(candidate_id);
+        v2r.candidate_id = std::to_string(candidate_id);
         candidate_id ++;
         v2r.vote = blinded_msg;
         std::vector<unsigned char> v2r_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &v2r);
         network_driver->send(v2r_raw_data);
 
+        std::cout<<"has sent!"<<std::endl;
         //4) Receive the blind signature from the registrar and save it.
         //5) Receives and saves the signature from the server.
         std::vector<unsigned char> en_r2v_data = network_driver->read();
@@ -223,6 +227,7 @@ void VoterClient::HandleRegister(std::string input) {
         }
         RegistrarToVoter_Blind_Signature_Message r2v_sig_s;
         r2v_sig_s.deserialize(r2v_data.first);
+        std::cout<<"has read!"<<std::endl;
 
 
         this->votes.ct.push_back(vote_s);
@@ -312,17 +317,21 @@ void VoterClient::HandleVerify(std::string input) {
   auto result = this->DoVerify();
 
   // Error if election failed
-  if (!std::get<2>(result)) {
+  if (!std::get<0>(result)) {
     this->cli_driver->print_warning("Election failed!");
     throw std::runtime_error("Election failed!");
   }
 
   // Print results
   this->cli_driver->print_success("Election succeeded!");
-  this->cli_driver->print_success("Number of votes for 0: " +
-                                  CryptoPP::IntToString(std::get<0>(result)));
-  this->cli_driver->print_success("Number of votes for 1: " +
-                                  CryptoPP::IntToString(std::get<1>(result)));
+//   this->cli_driver->print_success("Number of votes for 0: " +
+//                                   CryptoPP::IntToString(std::get<0>(result)));
+    auto vote_results = result.second;
+    for(int i = 0; i < vote_results.size(); i++) {
+        this->cli_driver->print_success("Number of voter " + CryptoPP::IntToString(i) + "is: " + 
+                                  CryptoPP::IntToString(vote_results[i]));
+    }
+ 
 }
 
 /**
@@ -333,7 +342,7 @@ void VoterClient::HandleVerify(std::string input) {
  * 4) Returns a vector - the number of votes every candidate receives
  * If a vote is invalid, simply *ignore* it: do not throw an error.
  */
-std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
+std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
   // TODO: implement me!
     //1) Verifies all vote ZKPs and their signatures
     // TallyerToWorld_Vote_Message
@@ -382,13 +391,13 @@ std::tuple<CryptoPP::Integer, CryptoPP::Integer, bool> VoterClient::DoVerify() {
         CryptoPP::Integer ret = ElectionClient::CombineResults(combine_vote, valid_partial_decryptions);
         if(ret == -1) {
             std::cout<<"error for finding the final result!"<<std::endl;
-            return std::make_tuple(0, 0, false);
+            return std::make_pair(false, res);
         }
-        //todo：res的含义 待确认！
+        
         std::cout<<"As for candidate "<<i<<", it receives vote "<<ret<<std::endl;
         res.push_back(ret);
     }
-    return std::make_tuple(0, 0, 1);//todo
+    return std::make_pair(true, res);
 
   
 }

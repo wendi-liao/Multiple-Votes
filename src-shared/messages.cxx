@@ -256,7 +256,7 @@ void VoterToRegistrar_Register_Message::serialize(
 
   // Add fields.
   put_string(this->id, data);
-  put_string(this->id, candidate_id);
+  put_string(this->candidate_id, data);
   put_integer(this->vote, data);
 }
 
