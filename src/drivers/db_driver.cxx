@@ -37,9 +37,11 @@ void DBDriver::init_tables() {
   // create voter table
   // 修改：Voter 表主键更改为（id, candidate_id）
   std::string create_voter_query = "CREATE TABLE IF NOT EXISTS voter("
-                                   "id TEXT PRIMARY KEY NOT NULL,"
-                                   "candidate_id TEXT PRIMARY KEY,"
-                                   "registrar_signature TEXT NOT NULL);";
+                                 "id TEXT NOT NULL,"
+                                 "candidate_id TEXT NOT NULL,"
+                                 "registrar_signature TEXT NOT NULL,"
+                                 "PRIMARY KEY (id, candidate_id));";
+
   char *err;
   int exit = sqlite3_exec(this->db, create_voter_query.c_str(), NULL, 0, &err);
   if (exit != SQLITE_OK) {
@@ -71,11 +73,12 @@ void DBDriver::init_tables() {
   // create partial_decryption table
   std::string create_partial_decryption_query =
       "CREATE TABLE IF NOT EXISTS partial_decryption("
-      "arbiter_id TEXT PRIMARY KEY NOT NULL, "
+      "arbiter_id TEXT NOT NULL, "
       "arbiter_vk_path TEXT NOT NULL, "
       "partial_decryption TEXT NOT NULL, "
       "zkp TEXT NOT NULL,"
-      "candidate_id TEXT NOT NULL);";
+      "candidate_id TEXT NOT NULL,"
+      "PRIMARY KEY (arbiter_id, candidate_id));";
   exit = sqlite3_exec(this->db, create_partial_decryption_query.c_str(), NULL,
                       0, &err);
   if (exit != SQLITE_OK) {
@@ -336,7 +339,6 @@ VoteRow DBDriver::insert_vote(VoteRow vote) {
     Multi_Vote_Ciphertext votes = vote.votes;
     Multi_VoteZKP_Struct zkps = vote.zkps;
     Multi_Integer unblinded_signatures = vote.unblinded_signatures;
-    std::string tallyer_signatures = vote.tallyer_signatures;
 
     // Serialize vote fields.
     std::vector<unsigned char> vote_data;
@@ -351,7 +353,7 @@ VoteRow DBDriver::insert_vote(VoteRow vote) {
     unblinded_signatures.serialize(sign_data);
     std::string unblinded_signature_str = chvec2str(sign_data);  
 
-    std::string tallyer_signature_str = tallyer_signatures;
+    std::string tallyer_signature_str = vote.tallyer_signatures;
 
     // Prepare statement.
     sqlite3_stmt *stmt;
@@ -689,7 +691,7 @@ DBDriver::insert_partial_decryptions(std::vector<PartialDecryptionRow> &partial_
         partial_decryption.zkp.serialize(zkp_data);
         std::string zkp_str = chvec2str(zkp_data);
 
-        std::string candidate_id_str = std::to_string(++id_num); //candidate id start from 1
+        std::string candidate_id_str = std::to_string(id_num++); //candidate id start from 0
 
         // Prepare statement.
         sqlite3_stmt *stmt;

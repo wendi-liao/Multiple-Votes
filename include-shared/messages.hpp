@@ -42,6 +42,7 @@ enum T {
 };
 MessageType::T get_message_type(std::vector<unsigned char> &data);
 
+const char delimiter = '.';
 // ================================================
 // SERIALIZABLE
 // ================================================
@@ -134,7 +135,7 @@ struct ServerToUser_DHPublicValue_Message : public Serializable {
 
 struct VoterToRegistrar_Register_Message : public Serializable {
   std::string id;
-  std::string candidate_id;
+//   std::string candidate_id;
   CryptoPP::Integer vote;
 
   void serialize(std::vector<unsigned char> &data);
@@ -143,7 +144,7 @@ struct VoterToRegistrar_Register_Message : public Serializable {
 
 struct RegistrarToVoter_Blind_Signature_Message : public Serializable {
   std::string id;
-  std::string candidate_id;
+//   std::string candidate_id;
   CryptoPP::Integer registrar_signature;
 
   void serialize(std::vector<unsigned char> &data);

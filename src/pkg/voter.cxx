@@ -284,7 +284,8 @@ void VoterClient::HandleVote(std::string input) {
 
     // 2) Unblinds the registrar signature that is stored in this->registrar_signature`.
     Multi_Integer registrar_signatures_unbinded;
-    std::cout<<"t:"<<t<<std::endl;
+    std::cout<<"t:"<<this->t<<std::endl;
+
     for(int i = 0 ; i < this->t; i++) {
         CryptoPP::Integer registrar_signature_unbinded = 
             crypto_driver->RSA_BLIND_unblind(RSA_registrar_verification_key, this->registrar_signatures.ints[i], this->blinds.ints[i]);
@@ -297,7 +298,18 @@ void VoterClient::HandleVote(std::string input) {
     v2t.votes = this->votes;
     v2t.unblinded_signatures = registrar_signatures_unbinded;
     v2t.zkps = this->vote_zkps;
-   
+    
+    // std::cout<<"real votes size:"<<v2t.votes.ct.size();
+    // std::cout<<"real sign size:"<<v2t.unblinded_signatures.ints.size();
+    // std::cout<<"real zkps size:"<<v2t.zkps.zkp.size();
+
+    // std::vector<unsigned char> raw_data;
+    // v2t.serialize(raw_data);
+    // VoterToTallyer_Vote_Message test_v2t;
+    // test_v2t.deserialize(raw_data);
+    // std::cout<<"votes size:"<<test_v2t.votes.ct.size();
+    // std::cout<<"sign size:"<<test_v2t.unblinded_signatures.ints.size();
+    // std::cout<<"zkps size:"<<test_v2t.zkps.zkp.size();
 
     std::vector<unsigned char> v2t_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &v2t);
     network_driver->send(v2t_raw_data);
@@ -354,6 +366,7 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
         if(!crypto_driver->RSA_verify(RSA_tallyer_verification_key, 
             concat_votes_zkps_and_signatures(vMsg.votes, vMsg.zkps, vMsg.unblinded_signatures), vMsg.tallyer_signatures)) {
             it = votes.erase(it);
+            std::cout<<"RSA VERIFY FAILED!"<<std::endl;
         } else {
             ++it;
         }
@@ -368,15 +381,21 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
             Vote_Ciphertext vote = vMsg.votes.ct[i];
             VoteZKP_Struct zkp = vMsg.zkps.zkp[i];
             CryptoPP::Integer unblinded_signature = vMsg.unblinded_signatures.ints[i];
-            if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote, zkp), this->EG_arbiter_public_key)) 
+            if(!ElectionClient::VerifyVoteZKP(std::make_pair(vote, zkp), this->EG_arbiter_public_key)) {
+                std::cout<<"ZKP VERIFY FAILED!"<<std::endl;
                 continue;
-            if(!crypto_driver->RSA_BLIND_verify(RSA_registrar_verification_key, vote, unblinded_signature)) 
+            }
+            if(!crypto_driver->RSA_BLIND_verify(RSA_registrar_verification_key, vote, unblinded_signature)) {
+                std::cout<<"registrar VERIFY FAILED!"<<std::endl;
                 continue;    
+            } 
             combine_vote.a = a_times_b_mod_c(combine_vote.a, vote.a, DL_P);
             combine_vote.b = a_times_b_mod_c(combine_vote.b, vote.b, DL_P);
         }
        combine_votes.push_back(combine_vote);
     }    
+    std::cout<<"start partial dec!"<<std::endl;
+
     std::vector<CryptoPP::Integer> res;
     for(int i = 0; i < this->t; i ++) {
         std::vector<PartialDecryptionRow> partial_dec = db_driver->row_partial_decryptions(i); //这里改了，对于第i列（也就是第i个candidate），求取它的情况
@@ -384,7 +403,10 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
         for(auto dec_msg: partial_dec) {
             CryptoPP::Integer pki;
             LoadInteger(dec_msg.arbiter_vk_path, pki);
-            if(!ElectionClient::VerifyPartialDecryptZKP(dec_msg, pki)) continue;
+            if(!ElectionClient::VerifyPartialDecryptZKP(dec_msg, pki)) {
+                std::cout<<"VerifyPartialDecryptZKP fail!"<<std::endl;
+                continue;
+            }
             valid_partial_decryptions.push_back(dec_msg);
         }
         

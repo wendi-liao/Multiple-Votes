@@ -429,7 +429,6 @@ void Multi_Vote_Ciphertext::serialize(std::vector<unsigned char> &data) {
  */
 int Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
   // Check correct message type.
-   std::cout<<"multi:"<<static_cast<int>(data[0])<<std::endl;
 
   assert(data[0] == MessageType::Multi_Vote_Ciphertext);
   // Get fields.
@@ -439,7 +438,6 @@ int Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
   while(iter + n < data.end()) {
     std::vector<unsigned char> vote_slice =
         std::vector<unsigned char>(data.begin() + n, data.end());
-        std::cout<<"n:"<<n<<" ";
     Vote_Ciphertext vote;
     n += vote.deserialize(vote_slice);
     this->ct.push_back(vote);
@@ -534,9 +532,13 @@ void VoterToTallyer_Vote_Message::serialize(std::vector<unsigned char> &data) {
   this->votes.serialize(vote_data);
   data.insert(data.end(), vote_data.begin(), vote_data.end());
 
+  data.push_back(delimiter);
+
     std::vector<unsigned char> sign_data;
     this->unblinded_signatures.serialize(sign_data);
     data.insert(data.end(), sign_data.begin(), sign_data.end());
+
+  data.push_back(delimiter);
 
   std::vector<unsigned char> zkp_data;
   this->zkps.serialize(zkp_data);
@@ -547,30 +549,49 @@ void VoterToTallyer_Vote_Message::serialize(std::vector<unsigned char> &data) {
  * deserialize VoterToTallyer_Vote_Message.
  */
 int VoterToTallyer_Vote_Message::deserialize(std::vector<unsigned char> &data) {
-    std::cout<<"voter2T"<<std::endl;
     std::cout<<static_cast<int>(data[0])<<std::endl;
   // Check correct message type.
   assert(data[0] == MessageType::VoterToTallyer_Vote_Message);
-    std::cout<<"n"<<std::endl;
   // Get fields.
   int n = 1;
-    std::cout<<"n"<<n<<std::endl;
 
-  std::vector<unsigned char> vote_slice =
-      std::vector<unsigned char>(data.begin() + n, data.end());
+    std::vector<unsigned char> sub_data(data.begin() + n, data.end());
+    std::vector<std::string> data_strs=  string_split(chvec2str(sub_data), delimiter);
+    std::cout<<"size:"<<data_strs.size()<<std::endl;
+    assert(data_strs.size() == 3);
+    std::vector<std::vector<unsigned char>> slice_datas(3);
+    slice_datas[0] = str2chvec(data_strs[0]);
+
+      std::vector<unsigned char> vote_slice =
+      std::vector<unsigned char>(slice_datas[0].begin(), slice_datas[0].end());
   n += this->votes.deserialize(vote_slice);
     std::cout<<"vote_slice"<<" ";
 
-  std::vector<unsigned char> sign_slice =
-      std::vector<unsigned char>(data.begin() + n, data.end());
+    slice_datas[1] = str2chvec(data_strs[1]);
+      std::vector<unsigned char> sign_slice =
+      std::vector<unsigned char>(slice_datas[1].begin(), slice_datas[1].end());
   n += this->unblinded_signatures.deserialize(sign_slice);
     std::cout<<"sign_slice"<<" ";
 
-  std::vector<unsigned char> zkp_slice =
-      std::vector<unsigned char>(data.begin() + n, data.end());
+    slice_datas[2] = str2chvec(data_strs[2]);
+      std::vector<unsigned char> zkp_slice =
+      std::vector<unsigned char>(slice_datas[2].begin(), slice_datas[2].end());
   n += this->zkps.deserialize(zkp_slice);
 
-    std::cout<<"voter2T finish"<<" ";
+//   std::vector<unsigned char> vote_slice =
+//       std::vector<unsigned char>(first_slice_data.begin() + n, data.end());
+//   n += this->votes.deserialize(vote_slice);
+//     std::cout<<"vote_slice"<<" ";
+
+//   std::vector<unsigned char> sign_slice =
+//       std::vector<unsigned char>(data.begin() + n, data.end());
+//   n += this->unblinded_signatures.deserialize(sign_slice);
+//     std::cout<<"sign_slice"<<" ";
+
+//   std::vector<unsigned char> zkp_slice =
+//       std::vector<unsigned char>(data.begin() + n, data.end());
+//   n += this->zkps.deserialize(zkp_slice);
+
 
   return n;
 }
@@ -586,14 +607,17 @@ void TallyerToWorld_Vote_Message::serialize(std::vector<unsigned char> &data) {
   std::vector<unsigned char> vote_data;
   this->votes.serialize(vote_data);
   data.insert(data.end(), vote_data.begin(), vote_data.end());
+  data.push_back(delimiter);
 
   std::vector<unsigned char> zkp_data;
   this->zkps.serialize(zkp_data);
   data.insert(data.end(), zkp_data.begin(), zkp_data.end());
+  data.push_back(delimiter);
 
   std::vector<unsigned char> int_data;
   this->unblinded_signatures.serialize(int_data);
   data.insert(data.end(), int_data.begin(), int_data.end());
+  data.push_back(delimiter);
 
   put_string(this->tallyer_signatures, data);
 }
@@ -607,19 +631,29 @@ int TallyerToWorld_Vote_Message::deserialize(std::vector<unsigned char> &data) {
 
   // Get fields.
   int n = 1;
+  std::vector<unsigned char> sub_data(data.begin() + n, data.end());
+    std::vector<std::string> data_strs=  string_split(chvec2str(sub_data), delimiter);
+    std::cout<<"size:"<<data_strs.size()<<std::endl;
+    assert(data_strs.size() >= 4); // 因为tallyer_signatures是乱码，可能会有字符和delimiter相等。所以把第四节及其以后都算作tallyer_signatures
+    std::vector<std::vector<unsigned char>> slice_datas(4);
+
+    slice_datas[0] = str2chvec(data_strs[0]);
+
   std::vector<unsigned char> vote_slice =
-      std::vector<unsigned char>(data.begin() + n, data.end());
+      std::vector<unsigned char>(slice_datas[0].begin(), slice_datas[0].end());
   n += this->votes.deserialize(vote_slice);
 
+    slice_datas[1] = str2chvec(data_strs[1]);
   std::vector<unsigned char> zkp_slice =
-      std::vector<unsigned char>(data.begin() + n, data.end());
+      std::vector<unsigned char>(slice_datas[1].begin(), slice_datas[1].end());
   n += this->zkps.deserialize(zkp_slice);
 
+    slice_datas[2] = str2chvec(data_strs[2]);
   std::vector<unsigned char> signature_slice =
-      std::vector<unsigned char>(data.begin() + n, data.end());
+      std::vector<unsigned char>(slice_datas[2].begin(), slice_datas[2].end());
   n += this->unblinded_signatures.deserialize(signature_slice);
 
-  n += get_string(&this->tallyer_signatures, data, n);
+  n += get_string(&this->tallyer_signatures, data, n+3);
   return n;
 }
 

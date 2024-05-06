@@ -223,6 +223,21 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
     t2w_msg.unblinded_signatures = v2t.unblinded_signatures;
     t2w_msg.tallyer_signatures = signature_tallyer;
 
+    // std::cout<<"real votes size:"<<t2w_msg.votes.ct.size();
+    // std::cout<<"real zkps size:"<<t2w_msg.zkps.zkp.size();
+    // std::cout<<"real sign size:"<<t2w_msg.unblinded_signatures.ints.size();
+    // std::cout<<"real tall sign:"<<t2w_msg.tallyer_signatures.size();
+    
+    // std::vector<unsigned char> raw_data;
+    // t2w_msg.serialize(raw_data);
+    // VoteRow test;
+    // test.deserialize(raw_data);
+    // std::cout<<"test votes size:"<<test.votes.ct.size();
+    // std::cout<<"test zkps size:"<<test.zkps.zkp.size();
+    // std::cout<<"test sign size:"<<test.unblinded_signatures.ints.size();
+    // std::cout<<"test tall sign:"<<test.tallyer_signatures.size();
+    
+
     db_driver->insert_vote(t2w_msg);
 
 //      Disconnect and throw an error if any MACs, signatures, or zkps are invalid

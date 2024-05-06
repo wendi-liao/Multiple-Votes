@@ -110,6 +110,7 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
     std::vector<VoteRow> valid_vote;
     for(auto &vMsg: allV) {
         this->t = vMsg.votes.ct.size();
+        std::cout<<"t-arbiter:"<<this->t<<std::endl;
         bool invalid_voter = false;
         for(int i = 0; i < this->t; i++) {
             Vote_Ciphertext vote =  vMsg.votes.ct[i];
@@ -127,16 +128,18 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
             }
         }
         if(invalid_voter) continue;
-
         //need to be consistent to tallyer - HandleTally
         std::vector<unsigned char> vote_cipher_data;
         vMsg.votes.serialize(vote_cipher_data);
         std::vector<unsigned char> zkp_data;
+        
+
         vMsg.zkps.serialize(zkp_data);
         std::vector<unsigned char> signature_data;
         vMsg.unblinded_signatures.serialize(signature_data);
         
         std::string sign_tallyer = chvec2str(vote_cipher_data) + chvec2str(zkp_data) + chvec2str(signature_data); 
+        
         if(!crypto_driver->RSA_verify(this->RSA_tallyer_verification_key, str2chvec(sign_tallyer), vMsg.tallyer_signatures)) {
             throw std::runtime_error("Arbiter:tallyer_signature verification fails!");
             continue;
