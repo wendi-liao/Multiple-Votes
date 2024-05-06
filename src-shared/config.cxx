@@ -64,6 +64,7 @@ VoterConfig load_voter_config(std::string filename) {
   config.voter_registrar_signature_path =
       root.get<std::string>("voter_registrar_signature_path", "");
   config.voter_blind_path = root.get<std::string>("voter_blind_path", "");
+  config.voter_number_path = root.get<std::string>("voter_number_path", "");
 
   return config;
 }

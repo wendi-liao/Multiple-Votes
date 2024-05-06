@@ -25,6 +25,8 @@ struct VoterConfig {
   std::string voter_vote_zkp_path;
   std::string voter_registrar_signature_path;
   std::string voter_blind_path;
+  std::string voter_number_path;
+
 };
 VoterConfig load_voter_config(std::string filename);
 

@@ -153,6 +153,7 @@ TallyerClient::HandleKeyExchange(std::shared_ptr<NetworkDriver> network_driver,
  */
 void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
                                 std::shared_ptr<CryptoDriver> crypto_driver) {
+
   // TODO: implement me!
     // 1) Handles key exchange.
     auto keys = HandleKeyExchange(network_driver, crypto_driver);
@@ -160,14 +161,18 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
     CryptoPP::SecByteBlock HMAC_key = keys.second;
     // 2) Receives a vote from the user, makes sure the user hasn't voted yet,
     // verifies the server's signature, and verify the zkp.
+
     std::vector<unsigned char> en_v2t_data = network_driver->read();
     auto v2t_data = crypto_driver->decrypt_and_verify(AES_key, HMAC_key, en_v2t_data);
     if(!v2t_data.second) {
         std::cerr<<"invalid message!"<<std::endl;
         return;
     }
+
     VoterToTallyer_Vote_Message v2t;
+
     v2t.deserialize(v2t_data.first);
+
     // makes sure the user hasn't voted yet,
     if(db_driver->vote_exists(v2t.votes)) {
         std::cerr<< "has voted!"<<std::endl;
@@ -176,6 +181,7 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
     }
     
     //verifies the server's signature, and verify the zkp.
+
     this->t = v2t.votes.ct.size();
     assert(this->t == v2t.unblinded_signatures.ints.size() && this->t == v2t.zkps.zkp.size() && "vector should have same size!");
     for(int i = 0; i < this->t; i++) {
@@ -200,6 +206,7 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
     //3) Signs the vote and publishes it to the database if it is valid.
     //4) Mark this user as having already voted.
     //need to be consistent to arbiter - HandleAdjudicate
+
     std::vector<unsigned char> vote_cipher_data;
     v2t.votes.serialize(vote_cipher_data);
     std::vector<unsigned char> zkp_data;

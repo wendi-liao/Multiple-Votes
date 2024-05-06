@@ -256,7 +256,7 @@ void VoterToRegistrar_Register_Message::serialize(
 
   // Add fields.
   put_string(this->id, data);
-  put_string(this->candidate_id, data);
+//   put_string(this->candidate_id, data);
   put_integer(this->vote, data);
 }
 
@@ -272,8 +272,42 @@ int VoterToRegistrar_Register_Message::deserialize(
   std::string user_verification_key_str;
   int n = 1;
   n += get_string(&this->id, data, n);
-  n += get_string(&this->candidate_id, data, n);
+//   n += get_string(&this->candidate_id, data, n);
   n += get_integer(&this->vote, data, n);
+  return n;
+}
+
+/**
+ * serialize VoterToRegistrar_Register_Messages.
+ */
+void VoterToRegistrar_Register_Messages::serialize(
+    std::vector<unsigned char> &data) {
+  // Add message type.
+  data.push_back((char)MessageType::VoterToRegistrar_Register_Messages);
+
+  // Add fields.
+    put_string(this->id, data);
+    std::vector<unsigned char> vote_data;
+    this->votes.serialize(vote_data);
+    data.insert(data.end(), vote_data.begin(), vote_data.end());
+
+}
+
+/**
+ * deserialize VoterToRegistrar_Register_Messages.
+ */
+int VoterToRegistrar_Register_Messages::deserialize(
+    std::vector<unsigned char> &data) {
+  // Check correct message type.
+  assert(data[0] == MessageType::VoterToRegistrar_Register_Messages);
+
+  // Get fields.
+    int n = 1;
+    n += get_string(&this->id, data, n);
+    std::vector<unsigned char> vote_data =
+        std::vector<unsigned char>(data.begin() + n, data.end());
+    n += this->votes.deserialize(vote_data);
+
   return n;
 }
 
@@ -287,6 +321,8 @@ void RegistrarToVoter_Blind_Signature_Message::serialize(
 
   // Add fields.
   put_string(this->id, data);
+//   put_string(this->candidate_id, data);
+
   put_integer(this->registrar_signature, data);
 }
 
@@ -301,7 +337,44 @@ int RegistrarToVoter_Blind_Signature_Message::deserialize(
   // Get fields.
   int n = 1;
   n += get_string(&this->id, data, n);
+//   n += get_string(&this->candidate_id, data, n);
   n += get_integer(&this->registrar_signature, data, n);
+
+  return n;
+}
+
+/**
+ * serialize RegistrarToVoter_Blind_Signature_Messages.
+ */
+void RegistrarToVoter_Blind_Signature_Messages::serialize(
+    std::vector<unsigned char> &data) {
+  // Add message type.
+  data.push_back((char)MessageType::RegistrarToVoter_Blind_Signature_Messages);
+
+  // Add fields.
+  put_string(this->id, data);
+    
+    std::vector<unsigned char> signature_data;
+    this->registrar_signatures.serialize(signature_data);
+    data.insert(data.end(), signature_data.begin(), signature_data.end());
+
+}
+
+/**
+ * deserialize RegistrarToVoter_Blind_Signature_Messages.
+ */
+int RegistrarToVoter_Blind_Signature_Messages::deserialize(
+    std::vector<unsigned char> &data) {
+  // Check correct message type.
+  assert(data[0] == MessageType::RegistrarToVoter_Blind_Signature_Messages);
+
+  // Get fields.
+  int n = 1;
+  n += get_string(&this->id, data, n);
+   std::vector<unsigned char> sign_data =
+        std::vector<unsigned char>(data.begin() + n, data.end());
+    n += this->registrar_signatures.deserialize(sign_data);
+
 
   return n;
 }
@@ -356,9 +429,9 @@ void Multi_Vote_Ciphertext::serialize(std::vector<unsigned char> &data) {
  */
 int Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
   // Check correct message type.
-  std::cout<<"datasize"<<data.size()<<std::endl;
-  assert(data[0] == MessageType::Multi_Vote_Ciphertext);
+   std::cout<<"multi:"<<static_cast<int>(data[0])<<std::endl;
 
+  assert(data[0] == MessageType::Multi_Vote_Ciphertext);
   // Get fields.
   int n = 1;
   int idx = 0;
@@ -366,6 +439,7 @@ int Multi_Vote_Ciphertext::deserialize(std::vector<unsigned char> &data) {
   while(iter + n < data.end()) {
     std::vector<unsigned char> vote_slice =
         std::vector<unsigned char>(data.begin() + n, data.end());
+        std::cout<<"n:"<<n<<" ";
     Vote_Ciphertext vote;
     n += vote.deserialize(vote_slice);
     this->ct.push_back(vote);
@@ -473,22 +547,30 @@ void VoterToTallyer_Vote_Message::serialize(std::vector<unsigned char> &data) {
  * deserialize VoterToTallyer_Vote_Message.
  */
 int VoterToTallyer_Vote_Message::deserialize(std::vector<unsigned char> &data) {
+    std::cout<<"voter2T"<<std::endl;
+    std::cout<<static_cast<int>(data[0])<<std::endl;
   // Check correct message type.
   assert(data[0] == MessageType::VoterToTallyer_Vote_Message);
-
+    std::cout<<"n"<<std::endl;
   // Get fields.
   int n = 1;
+    std::cout<<"n"<<n<<std::endl;
+
   std::vector<unsigned char> vote_slice =
       std::vector<unsigned char>(data.begin() + n, data.end());
   n += this->votes.deserialize(vote_slice);
+    std::cout<<"vote_slice"<<" ";
 
   std::vector<unsigned char> sign_slice =
       std::vector<unsigned char>(data.begin() + n, data.end());
   n += this->unblinded_signatures.deserialize(sign_slice);
+    std::cout<<"sign_slice"<<" ";
 
   std::vector<unsigned char> zkp_slice =
       std::vector<unsigned char>(data.begin() + n, data.end());
   n += this->zkps.deserialize(zkp_slice);
+
+    std::cout<<"voter2T finish"<<" ";
 
   return n;
 }

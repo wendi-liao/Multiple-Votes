@@ -165,29 +165,35 @@ void RegistrarClient::HandleRegister(
         std::cerr<<"invalid message!"<<std::endl;
         return;
     }
-    VoterToRegistrar_Register_Message v2r_rgs_m;
+    VoterToRegistrar_Register_Messages v2r_rgs_m;
     v2r_rgs_m.deserialize(v2r_data.first);
-     std::cout<<"candidate: "<<v2r_rgs_m.candidate_id<<std::endl;
     //id, vote
-    //todo: change it so that voter can be inserted for multiple times 
     //if needed: VoterToRegistrar_Register_Message 可以加一个参数，
-    RegistrarToVoter_Blind_Signature_Message r2v_sig_s;
-    RegistrarToVoter_Blind_Signature_Message voter = db_driver->find_voter(v2r_rgs_m.id, v2r_rgs_m.candidate_id);
-    
-    std::cout<<"has found voter"<<std::endl;
+    this->t = v2r_rgs_m.votes.ints.size();
+    Multi_Integer all_registrar_signatures;
 
-    if(voter.id != "") {
-        r2v_sig_s = voter;
-    }else {
-        r2v_sig_s.id = v2r_rgs_m.id;
-        r2v_sig_s.registrar_signature = crypto_driver->RSA_BLIND_sign(RSA_registrar_signing_key, v2r_rgs_m.vote); //  CryptoPP::Integer 
-        db_driver->insert_voter(r2v_sig_s, v2r_rgs_m.candidate_id);
+    std::string voter_id = v2r_rgs_m.id;
+
+    for(int i = 0; i < this->t; i++) {
+        RegistrarToVoter_Blind_Signature_Message current_voter_info = db_driver->find_voter(voter_id, std::to_string(i));
+        if(current_voter_info.id != "") {
+            all_registrar_signatures.ints.push_back(current_voter_info.registrar_signature);
+        }else {
+            CryptoPP::Integer each_registrar_signature = crypto_driver->RSA_BLIND_sign(RSA_registrar_signing_key, v2r_rgs_m.votes.ints[i]);
+            current_voter_info.id = voter_id;
+            // current_voter_info.candidate_id = std::to_string(i);
+            current_voter_info.registrar_signature = each_registrar_signature;
+            db_driver->insert_voter(current_voter_info, std::to_string(i));
+            all_registrar_signatures.ints.push_back(each_registrar_signature);
+        }
     }
+
+    RegistrarToVoter_Blind_Signature_Messages r2v_sig_s;
+    r2v_sig_s.id = voter_id;
+    r2v_sig_s.registrar_signatures = all_registrar_signatures;
     std::vector<unsigned char> r2v_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &r2v_sig_s);
     network_driver->send(r2v_raw_data);
-    std::cout<<"has sent"<<std::endl;
 
-    
   // --------------------------------
   // Exit cleanly
   network_driver->disconnect();

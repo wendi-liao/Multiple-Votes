@@ -38,4 +38,6 @@ private:
   CryptoPP::RSA::PublicKey RSA_tallyer_verification_key;
 
   void ListenForConnections(int port);
+
+  int t;
 };

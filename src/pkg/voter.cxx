@@ -31,9 +31,9 @@ VoterClient::VoterClient(std::shared_ptr<NetworkDriver> network_driver,
   this->db_driver->open(this->common_config.db_path);
   this->db_driver->init_tables();
   this->cli_driver->init();
-  this->t = 5;
-  this->k = 5;
-  assert(this->k <= this->t && "the allowed voting number is too large");
+//   this->t = 5;
+//   this->k = 5;
+//   assert(this->k <= this->t && "the allowed voting number is too large");
   initLogger();
 
 
@@ -83,6 +83,10 @@ VoterClient::VoterClient(std::shared_ptr<NetworkDriver> network_driver,
     Multi_Integer blinds;
     LoadIntegers(this->voter_config.voter_blind_path, blinds);
     this->blinds = blinds;
+
+    CryptoPP::Integer t;
+    LoadInteger(this->voter_config.voter_number_path, t);
+    this->t = static_cast<int>(t.ConvertToLong());
   } catch (CryptoPP::FileStore::OpenErr) {
     this->cli_driver->print_warning(
         "Error loading vote info; voter may still need to register.");
@@ -182,60 +186,56 @@ void VoterClient::HandleRegister(std::string input) {
 
   // TODO: implement me!
     // 1) Handle key exchange.
-    std::cout<<"Regi Hand"<<std::endl;
     auto keys = HandleKeyExchange(RSA_registrar_verification_key);
     this->AES_key = keys.first;
     this->HMAC_key = keys.second;
 
-    std::cout<<"Regi Hand finish"<<std::endl;
-    
-    // 修改: 增加此变量记录当前voter在给第candidate_id个人投票
-    int candidate_id = 0;
+    VoterToRegistrar_Register_Messages v2r;
+    v2r.id = voter_id;
+    this->t = 0;
 
     for(auto &raw_vote: raw_votes) {
-        std::cout<<"for candidate "<<candidate_id<<std::endl;
+        this->t ++;
         // 2) ElGamal encrypt the raw vote and generate a ZKP for it
         // through `ElectionClient::GenerateVote`.
         std::pair<Vote_Ciphertext, VoteZKP_Struct> encrypted_vote_and_zkp = ElectionClient::GenerateVote(raw_vote, this->EG_arbiter_public_key);
         Vote_Ciphertext vote_s = encrypted_vote_and_zkp.first;
         VoteZKP_Struct vote_zkp = encrypted_vote_and_zkp.second;
 
-        std::cout<<"blind vote "<<std::endl;
 
         //3) Blind the vote and send it to the registrar.
         auto msgs = crypto_driver->RSA_BLIND_blind(RSA_registrar_verification_key, vote_s); //std::pair<CryptoPP::Integer, CryptoPP::Integer> 
         CryptoPP::Integer blinded_msg = msgs.first;
         CryptoPP::Integer blind = msgs.second;
 
-        VoterToRegistrar_Register_Message v2r;
-        v2r.id = voter_id;
-        // 修改后的VoterToRegistrar_Register_Message新添一个candidate_id 的field
-        v2r.candidate_id = std::to_string(candidate_id);
-        candidate_id ++;
-        v2r.vote = blinded_msg;
-        std::vector<unsigned char> v2r_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &v2r);
-        network_driver->send(v2r_raw_data);
-
-        std::cout<<"has sent!"<<std::endl;
-        //4) Receive the blind signature from the registrar and save it.
-        //5) Receives and saves the signature from the server.
-        std::vector<unsigned char> en_r2v_data = network_driver->read();
-        auto r2v_data = crypto_driver->decrypt_and_verify(AES_key, HMAC_key, en_r2v_data);
-        if(!r2v_data.second) {
-            std::cerr<<"invalid message!"<<std::endl;
-            return;
-        }
-        RegistrarToVoter_Blind_Signature_Message r2v_sig_s;
-        r2v_sig_s.deserialize(r2v_data.first);
-        std::cout<<"has read!"<<std::endl;
-
-
+        v2r.votes.ints.push_back(blinded_msg);
+        
         this->votes.ct.push_back(vote_s);
         this->vote_zkps.zkp.push_back(vote_zkp);
-        this->registrar_signatures.ints.push_back(r2v_sig_s.registrar_signature);
         this->blinds.ints.push_back(blind);
-
     }
+
+    std::vector<unsigned char> v2r_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &v2r);
+    network_driver->send(v2r_raw_data);
+
+    //4) Receive the blind signature from the registrar and save it.
+    //5) Receives and saves the signature from the server.
+    std::vector<unsigned char> en_r2v_data = network_driver->read();
+    auto r2v_data = crypto_driver->decrypt_and_verify(AES_key, HMAC_key, en_r2v_data);
+    if(!r2v_data.second) {
+        std::cerr<<"invalid message!"<<std::endl;
+        return;
+    }
+    RegistrarToVoter_Blind_Signature_Messages r2v_sig_s;
+    r2v_sig_s.deserialize(r2v_data.first);
+
+    this->registrar_signatures = r2v_sig_s.registrar_signatures;
+
+
+
+
+
+
     // Save the ElGamal encrypted vote, ZKP, registrar signature, and blind
     // to both memory and disk
     // [STUDENTS] You may have named the RHS variables below differently.
@@ -250,6 +250,7 @@ void VoterClient::HandleRegister(std::string input) {
     SaveIntegers(this->voter_config.voter_registrar_signature_path,
                 this->registrar_signatures);
     SaveIntegers(this->voter_config.voter_blind_path, this->blinds);
+    SaveInteger(this->voter_config.voter_number_path, this->t);
 
   this->cli_driver->print_info(
       "Voter registered! Vote saved at " + this->voter_config.voter_vote_path +
@@ -283,23 +284,23 @@ void VoterClient::HandleVote(std::string input) {
 
     // 2) Unblinds the registrar signature that is stored in this->registrar_signature`.
     Multi_Integer registrar_signatures_unbinded;
+    std::cout<<"t:"<<t<<std::endl;
     for(int i = 0 ; i < this->t; i++) {
         CryptoPP::Integer registrar_signature_unbinded = 
             crypto_driver->RSA_BLIND_unblind(RSA_registrar_verification_key, this->registrar_signatures.ints[i], this->blinds.ints[i]);
         registrar_signatures_unbinded.ints.push_back(registrar_signature_unbinded);
     }
 
-
     //3) Sends the vote, ZKP, and unblinded signature to the tallyer.
     VoterToTallyer_Vote_Message v2t;
+    
     v2t.votes = this->votes;
     v2t.unblinded_signatures = registrar_signatures_unbinded;
     v2t.zkps = this->vote_zkps;
+   
 
     std::vector<unsigned char> v2t_raw_data = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &v2t);
     network_driver->send(v2t_raw_data);
-    
-
     
 
   // --------------------------------

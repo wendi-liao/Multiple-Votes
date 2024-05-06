@@ -36,6 +36,8 @@ enum T {
   Multi_VoteZKP_Struct = 14,
   Multi_Integer = 15,
   Multi_String = 16,
+  VoterToRegistrar_Register_Messages = 17,
+  RegistrarToVoter_Blind_Signature_Messages = 18
 };
 };
 MessageType::T get_message_type(std::vector<unsigned char> &data);
@@ -141,7 +143,25 @@ struct VoterToRegistrar_Register_Message : public Serializable {
 
 struct RegistrarToVoter_Blind_Signature_Message : public Serializable {
   std::string id;
+  std::string candidate_id;
   CryptoPP::Integer registrar_signature;
+
+  void serialize(std::vector<unsigned char> &data);
+  int deserialize(std::vector<unsigned char> &data);
+};
+
+struct VoterToRegistrar_Register_Messages : public Serializable {
+  std::string id;
+  Multi_Integer votes;
+
+  void serialize(std::vector<unsigned char> &data);
+  int deserialize(std::vector<unsigned char> &data);
+};
+
+
+struct RegistrarToVoter_Blind_Signature_Messages : public Serializable {
+  std::string id;
+  Multi_Integer registrar_signatures;
 
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);
