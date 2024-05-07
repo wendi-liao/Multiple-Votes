@@ -114,6 +114,12 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
         bool invalid_voter = false;
         for(int i = 0; i < this->t; i++) {
             Vote_Ciphertext vote =  vMsg.votes.ct[i];
+            
+            std::cout<<"inside vmsg"<<std::endl;
+            std::vector<unsigned char> en_data_vote;
+            vote.serialize(en_data_vote);
+            std::cout<<chvec2str(en_data_vote)<<std::endl;
+
             CryptoPP::Integer unblinded_signature =  vMsg.unblinded_signatures.ints[i];
             VoteZKP_Struct zkp =  vMsg.zkps.zkp[i];
             if(!crypto_driver->RSA_BLIND_verify(this->RSA_registrar_verification_key, vote, unblinded_signature)) {
@@ -163,12 +169,14 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
 
     //todo:!!
     std::vector<PartialDecryptionRow> partialRows;
+    assert(this->t == partial_decryptions.size());
     for(int i = 0; i < this->t; i++) {
         PartialDecryptionRow partialRow;
         auto partial_decrypt = partial_decryptions[i];
         partialRow.arbiter_id = arbiter_config.arbiter_id;
         partialRow.arbiter_vk_path = arbiter_config.arbiter_public_key_path;
         partialRow.dec = partial_decrypt.first;
+
         partialRow.zkp = partial_decrypt.second;
         partialRows.push_back(partialRow);
     }

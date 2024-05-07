@@ -162,6 +162,7 @@ std::vector<Vote_Ciphertext> ElectionClient::CombineVotes(std::vector<VoteRow> a
             combine_vote.a = a_times_b_mod_c(combine_vote.a, vote_msg.votes.ct[i].a, DL_P);
             combine_vote.b = a_times_b_mod_c(combine_vote.b, vote_msg.votes.ct[i].b, DL_P);
         }
+
         combined_votes.push_back(combine_vote);
     }
     
@@ -185,7 +186,7 @@ CryptoPP::Integer ElectionClient::CombineResults(
         d_mul = a_times_b_mod_c(d_mul, part_dec.dec.d, DL_P); //mod p or not?
     }
     CryptoPP::Integer g_m = a_times_b_mod_c(combined_vote.b, EuclideanMultiplicativeInverse(d_mul, DL_P), DL_P);
-    for(CryptoPP::Integer i = 0; i < 1000; i++) {
+    for(CryptoPP::Integer i = 0; i < 3000; i++) {
         if(ModularExponentiation(DL_G, i, DL_P) == g_m) return i;
     }
     std::cerr<<"cant find matching m!"<<std::endl;

@@ -521,15 +521,16 @@ DBDriver::DBDriver::row_partial_decryptions(int id) {
 
   std::string find_query = "SELECT arbiter_id, arbiter_vk_path, "
                            "partial_decryption, zkp, candidate_id FROM partial_decryption "
-                           "WHERE candidate_id = ?";
+                           "WHERE candidate_id = ?;";
 
   // Prepare statement.
   sqlite3_stmt *stmt;
   sqlite3_prepare_v2(this->db, find_query.c_str(), find_query.length(), &stmt,
                      nullptr);
    // Bind the id value to the query parameter.
-  sqlite3_bind_text(stmt, 1, std::to_string(id).c_str(), -1, SQLITE_TRANSIENT);
-
+   std::string id_str = std::to_string(id);
+   sqlite3_bind_blob(stmt, 1, id_str.c_str(), id_str.length(), SQLITE_STATIC);
+                    
   // Retreive partial_decryption.
   std::vector<PartialDecryptionRow> res;
   while (sqlite3_step(stmt) == SQLITE_ROW) {

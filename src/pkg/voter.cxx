@@ -179,7 +179,6 @@ void VoterClient::HandleRegister(std::string input) {
     std::stringstream ss(args[3]);
     std::string raw_vote_string;
     while (std::getline(ss, raw_vote_string, ',')) {
-        std::cout<<"raw_vote_string: "<< raw_vote_string<<std::endl;
         raw_votes.push_back(CryptoPP::Integer(std::stoi(raw_vote_string)));
     }
     
@@ -194,6 +193,7 @@ void VoterClient::HandleRegister(std::string input) {
     v2r.id = voter_id;
     this->t = 0;
 
+
     for(auto &raw_vote: raw_votes) {
         this->t ++;
         // 2) ElGamal encrypt the raw vote and generate a ZKP for it
@@ -201,8 +201,10 @@ void VoterClient::HandleRegister(std::string input) {
         std::pair<Vote_Ciphertext, VoteZKP_Struct> encrypted_vote_and_zkp = ElectionClient::GenerateVote(raw_vote, this->EG_arbiter_public_key);
         Vote_Ciphertext vote_s = encrypted_vote_and_zkp.first;
         VoteZKP_Struct vote_zkp = encrypted_vote_and_zkp.second;
-
-
+        // std::cout<<"EN RESULT:"<<" ";
+        // std::vector<unsigned char> en_data_vote;
+        // vote_s.serialize(en_data_vote);
+        // std::cout<<chvec2str(en_data_vote)<<std::endl;
         //3) Blind the vote and send it to the registrar.
         auto msgs = crypto_driver->RSA_BLIND_blind(RSA_registrar_verification_key, vote_s); //std::pair<CryptoPP::Integer, CryptoPP::Integer> 
         CryptoPP::Integer blinded_msg = msgs.first;
@@ -359,6 +361,8 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
   // TODO: implement me!
     //1) Verifies all vote ZKPs and their signatures
     // TallyerToWorld_Vote_Message
+    std::cout<<"all votes!"<<std::endl;
+
     std::vector<VoteRow> votes = db_driver->all_votes();
     //check every voter:
     for (auto it = votes.begin(); it != votes.end(); ) {
@@ -371,6 +375,8 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
             ++it;
         }
     }
+    std::cout<<"check votes!"<<std::endl;
+
     //check every voter's single vote and combine them
     std::vector<Vote_Ciphertext> combine_votes;
     for(int i = 0; i < this->t; i++) { // 对于每一纵列（candidate），按照原有的程序进行
@@ -407,6 +413,7 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
                 std::cout<<"VerifyPartialDecryptZKP fail!"<<std::endl;
                 continue;
             }
+
             valid_partial_decryptions.push_back(dec_msg);
         }
         
