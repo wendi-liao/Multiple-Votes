@@ -158,7 +158,7 @@ void RegistrarClient::HandleRegister(
 
     //2) Gets user info and verifies that the user hasn't already registered. 
     // (if already registered, return existing signature).
-    std::cout<<"begin read!"<<std::endl;
+    // std::cout<<"begin read!"<<std::endl;
     auto en_v2r_data = network_driver->read();
     auto v2r_data = crypto_driver->decrypt_and_verify(AES_key, HMAC_key, en_v2r_data);
     if(!v2r_data.second) {
@@ -178,6 +178,7 @@ void RegistrarClient::HandleRegister(
         RegistrarToVoter_Blind_Signature_Message current_voter_info = db_driver->find_voter(voter_id, std::to_string(i));
         if(current_voter_info.id != "") {
             all_registrar_signatures.ints.push_back(current_voter_info.registrar_signature);
+            // std::cout << "/n Detect this Voter has registered before!/n" << std::endl;
         }else {
             CryptoPP::Integer each_registrar_signature = crypto_driver->RSA_BLIND_sign(RSA_registrar_signing_key, v2r_rgs_m.votes.ints[i]);
             current_voter_info.id = voter_id;
@@ -197,5 +198,5 @@ void RegistrarClient::HandleRegister(
   // --------------------------------
   // Exit cleanly
   network_driver->disconnect();
-  std::cout<<"finish!"<<std::endl;
+  // std::cout<<"finish!"<<std::endl;
 }

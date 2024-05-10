@@ -175,14 +175,20 @@ void TallyerClient::HandleTally(std::shared_ptr<NetworkDriver> network_driver,
 
     // makes sure the user hasn't voted yet,
     if(db_driver->vote_exists(v2t.votes)) {
-        std::cerr<< "has voted!"<<std::endl;
+        std::cerr<< "/n has voted! /n"<<std::endl;
         network_driver->disconnect();
         return;
     }
     
     //verifies the server's signature, and verify the zkp.
+    
 
     this->t = v2t.votes.ct.size();
+
+    // std::cout << this->t << std::endl;
+    // std::cout << v2t.unblinded_signatures.ints.size() << std::endl;
+    // std::cout << v2t.zkps.zkp.size() << std::endl;
+
     assert(this->t == v2t.unblinded_signatures.ints.size() && this->t == v2t.zkps.zkp.size() && "vector should have same size!");
     for(int i = 0; i < this->t; i++) {
         Vote_Ciphertext vote = v2t.votes.ct[i];

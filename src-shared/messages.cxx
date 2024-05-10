@@ -557,7 +557,7 @@ int VoterToTallyer_Vote_Message::deserialize(std::vector<unsigned char> &data) {
 
     std::vector<unsigned char> sub_data(data.begin() + n, data.end());
     std::vector<std::string> data_strs=  string_split(chvec2str(sub_data), delimiter);
-    std::cout<<"size:"<<data_strs.size()<<std::endl;
+    // std::cout<<"size:"<<data_strs.size()<<std::endl;
     assert(data_strs.size() == 3);
     std::vector<std::vector<unsigned char>> slice_datas(3);
     slice_datas[0] = str2chvec(data_strs[0]);

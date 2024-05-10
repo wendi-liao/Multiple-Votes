@@ -168,7 +168,7 @@ VoterRow DBDriver::find_voter(std::string id, std::string candidate_id) {
   // Finalize and return.
   int exit = sqlite3_finalize(stmt);
   if (exit != SQLITE_OK) {
-    std::cerr << "Error finding voter " << std::endl;
+    // std::cerr << "Error finding voter " << std::endl;
   }
   return voter;
 }
@@ -263,7 +263,7 @@ std::vector<VoteRow> DBDriver::all_votes() {
   // Finalize and return.
   int exit = sqlite3_finalize(stmt);
   if (exit != SQLITE_OK) {
-    std::cerr << "Error finding vote " << std::endl;
+    // std::cerr << "Error finding vote " << std::endl;
   }
   return res;
 }
@@ -442,13 +442,13 @@ bool DBDriver::vote_exists(Multi_Vote_Ciphertext votes) {
   } else if (rc == SQLITE_DONE) {
     result = false;
   } else {
-    std::cerr << "Error finding vote " << std::endl;
+    // std::cerr << "Error finding vote " << std::endl;
   }
 
   // Finalize and return.
   int exit = sqlite3_finalize(stmt);
   if (exit != SQLITE_OK) {
-    std::cerr << "Error finding vote " << std::endl;
+    // std::cerr << "Error finding vote " << std::endl;
   }
   return result;
 }

@@ -105,20 +105,20 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
                         this->EG_arbiter_public_key);
   // TODO: implement me!
     //2) Gets all of the votes from the database.
-    std::cout<<"Gets"<<std::endl;
+    // std::cout<<"Gets"<<std::endl;
     std::vector<VoteRow> allV = this->db_driver->all_votes(); // std::vector<VoteRow> 
     std::vector<VoteRow> valid_vote;
     for(auto &vMsg: allV) {
         this->t = vMsg.votes.ct.size();
-        std::cout<<"t-arbiter:"<<this->t<<std::endl;
+        // std::cout<<"t-arbiter:"<<this->t<<std::endl;
         bool invalid_voter = false;
         for(int i = 0; i < this->t; i++) {
             Vote_Ciphertext vote =  vMsg.votes.ct[i];
             
-            std::cout<<"inside vmsg"<<std::endl;
+            // std::cout<<"inside vmsg"<<std::endl;
             std::vector<unsigned char> en_data_vote;
             vote.serialize(en_data_vote);
-            std::cout<<chvec2str(en_data_vote)<<std::endl;
+            // std::cout<<chvec2str(en_data_vote)<<std::endl;
 
             CryptoPP::Integer unblinded_signature =  vMsg.unblinded_signatures.ints[i];
             VoteZKP_Struct zkp =  vMsg.zkps.zkp[i];
@@ -153,12 +153,12 @@ void ArbiterClient::HandleAdjudicate(std::string _) {
         valid_vote.push_back(vMsg);
     }
     //4) Combines all valid votes into one vote via `Election::CombineVotes`.
-    std::cout<<"Combines"<<std::endl;
+    // std::cout<<"Combines"<<std::endl;
 
     std::vector<Vote_Ciphertext> combined_votes = ElectionClient::CombineVotes(valid_vote);
 
     //5) Partially decrypts the combined vote.
-    std::cout<<"decrypts"<<std::endl;
+    // std::cout<<"decrypts"<<std::endl;
     std::vector<std::pair<PartialDecryption_Struct, DecryptionZKP_Struct>>  partial_decryptions;
     for(auto &combined_vote : combined_votes) {
         auto partial_decrypt = ElectionClient::PartialDecrypt(combined_vote, this->EG_arbiter_public_key_i, this->EG_arbiter_secret_key);

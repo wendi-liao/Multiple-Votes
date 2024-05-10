@@ -264,7 +264,8 @@ void VoterClient::HandleRegister(std::string input) {
  * Handle voting with the tallyer. This function:
  * 1) Handles key exchange.
  * 2) Unblinds the registrar signature that is stored in
- * `this->registrar_signature`. 3) Sends the vote, ZKP, and unblinded signature
+ * `this->registrar_signature`. 
+ * 3) Sends the vote, ZKP, and unblinded signature
  * to the tallyer.
  */
 void VoterClient::HandleVote(std::string input) {
@@ -341,11 +342,11 @@ void VoterClient::HandleVerify(std::string input) {
   this->cli_driver->print_success("Election succeeded!");
 //   this->cli_driver->print_success("Number of votes for 0: " +
 //                                   CryptoPP::IntToString(std::get<0>(result)));
-    auto vote_results = result.second;
-    for(int i = 0; i < vote_results.size(); i++) {
-        this->cli_driver->print_success("Number of voter " + CryptoPP::IntToString(i) + "is: " + 
-                                  CryptoPP::IntToString(vote_results[i]));
-    }
+    // auto vote_results = result.second;
+    // for(int i = 0; i < vote_results.size(); i++) {
+    //     this->cli_driver->print_success("Number of voter " + CryptoPP::IntToString(i) + "is: " + 
+    //                               CryptoPP::IntToString(vote_results[i]));
+    // }
  
 }
 
@@ -361,7 +362,7 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
   // TODO: implement me!
     //1) Verifies all vote ZKPs and their signatures
     // TallyerToWorld_Vote_Message
-    std::cout<<"all votes!"<<std::endl;
+    // std::cout<<"all votes!"<<std::endl;
 
     std::vector<VoteRow> votes = db_driver->all_votes();
     //check every voter:
@@ -375,7 +376,7 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
             ++it;
         }
     }
-    std::cout<<"check votes!"<<std::endl;
+    // std::cout<<"check votes!"<<std::endl;
 
     //check every voter's single vote and combine them
     std::vector<Vote_Ciphertext> combine_votes;
@@ -400,7 +401,7 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
         }
        combine_votes.push_back(combine_vote);
     }    
-    std::cout<<"start partial dec!"<<std::endl;
+    // std::cout<<"start partial dec!"<<std::endl;
 
     std::vector<CryptoPP::Integer> res;
     for(int i = 0; i < this->t; i ++) {
@@ -424,7 +425,7 @@ std::pair<bool, std::vector<CryptoPP::Integer>> VoterClient::DoVerify() {
             return std::make_pair(false, res);
         }
         
-        std::cout<<"As for candidate "<<i<<", it receives vote "<<ret<<std::endl;
+        std::cout<<"As for candidate "<<i<<", number of vote(s) is "<<ret<<std::endl;
         res.push_back(ret);
     }
     return std::make_pair(true, res);
